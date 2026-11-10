@@ -1,0 +1,12 @@
+{
+  "name": "RAFORI Fantasy",
+  "short_name": "RAFORI",
+  "description": "RPG fantasy en monde ouvert",
+  "lang": "fr",
+  "start_url": "./RAFORI_Fantasy_V21_Quests_Survival_Guide.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a1420",
+  "theme_color": "#0a1420"
+}
