@@ -892,7 +892,7 @@ body:has(#afSplash:not(.is-gone)) #studioIntro{visibility:hidden!important;point
 
 <div id="skillTooltip" role="tooltip" aria-live="polite"></div>
 <!-- Three.js r128 : fichier local d'abord (jeu 100 % hors-ligne), puis 3 CDN différents en secours -->
-<script src="three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
 <script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>')</script>
 <script>window.THREE||document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>')</script>
@@ -1348,7 +1348,8 @@ function buildHumanoid(c={}){
   // RAFORI V6 — visage orienté vers -Z ; les caméras d’aperçu sont placées devant le personnage.
   // Style low-poly flat-shaded, palette unie, modules géométriques sans textures complexes.
   // Contrat de compatibilité : group/body/head/cape, articulations, matériaux et fourreau conservés.
-  const M=(color,opts={})=>new THREE.MeshStandardMaterial({color,roughness:.78,flatShading:true,...opts});
+  // Le héros utilise des normales lissées : les facettes restent réservées aux créatures qui en ont besoin.
+  const M=(color,opts={})=>new THREE.MeshStandardMaterial({color,roughness:.78,flatShading:false,...opts});
   const skin=M(c.skin||0xc99a70),shirt=M(c.shirt||0x315d83),pants=M(c.pants||0x49372d);
   const boot=M(c.boot||0x34271f),hair=M(c.hair||0x38271e),eye=M(c.eye||0x24160f);
   const leather=M(c.belt||0x654126),leatherDark=M(0x2b1b16),gold=M(c.trim||0xc99a42,{metalness:.38,roughness:.48});
@@ -1367,7 +1368,7 @@ function buildHumanoid(c={}){
 
   // Jambes : cuisses pleines, genoux lisibles, mollets galbés et bottes orientées vers l'avant (-Z).
   const physique=c.physique||'normal';
-  const legR=physique==='robuste'?.108:(physique==='fin'?.083:.094);
+  const legR=physique==='robuste'?.104:(physique==='fin'?.080:.090);
   ell(body,pants,[0,.98,0],[.235,.16,.155],14).name='pelvis';
   const limb=(x,y,upperLen,lowerLen,upperMat,lowerMat,radius,kind)=>{
     const top=new THREE.Group();top.position.set(x,y,0);body.add(top);
@@ -1403,8 +1404,8 @@ function buildHumanoid(c={}){
     }
     return{top,low};
   };
-  const lL=limb(-.125,.94,.43,.42,pants,pants,legR,'leg');
-  const lR=limb(.125,.94,.43,.42,pants,pants,legR,'leg');
+  const lL=limb(-.12,.94,.47,.46,pants,pants,legR,'leg');
+  const lR=limb(.12,.94,.47,.46,pants,pants,legR,'leg');
   for(const [side,leg] of [[-1,lL],[1,lR]]){
     // Pantalon et genouillère anatomiquement alignés avec le genou.
     const knee=plate(leg.low,steel,[0,-.045,-.073],[.078,.075,.027],side*.06);knee.name='knee_guard';
@@ -1415,53 +1416,53 @@ function buildHumanoid(c={}){
 
   // Bassin et torse sculptés : taille resserrée, cage thoracique, pectoraux et épaules.
   ell(body,pants,[0,1.02,0],[.205,.15,.14],14);
-  const torsoProfile=[new THREE.Vector2(.19,-.27),new THREE.Vector2(.205,-.20),new THREE.Vector2(.22,-.08),new THREE.Vector2(.25,.06),new THREE.Vector2(.30,.22),new THREE.Vector2(.325,.34),new THREE.Vector2(.30,.43),new THREE.Vector2(.21,.46)];
+  const torsoProfile=[new THREE.Vector2(.155,-.27),new THREE.Vector2(.166,-.20),new THREE.Vector2(.180,-.08),new THREE.Vector2(.200,.06),new THREE.Vector2(.226,.22),new THREE.Vector2(.238,.34),new THREE.Vector2(.220,.43),new THREE.Vector2(.17,.46)];
   const torso=add(body,new THREE.LatheGeometry(torsoProfile,18),shirt,0,1.39,0,'anatomical_torso');torso.scale.z=.82;
   // Plis géométriques de la tunique : volumes larges, lisibles à distance.
-  for(const side of [-1,1]){const fold=add(body,new THREE.ConeGeometry(.045,.34,5),cloth2,side*.17,1.12,-.151,'tunic_fold');fold.rotation.z=side*.10;fold.rotation.x=.10;}
-  ell(body,shirt,[-.145,1.60,-.008],[.17,.125,.145],12).name='left_pectoral';
-  ell(body,shirt,[.145,1.60,-.008],[.17,.125,.145],12).name='right_pectoral';
-  ell(body,shirt,[0,1.24,-.005],[.19,.19,.125],12).name='abdomen';
+  for(const side of [-1,1]){const fold=add(body,new THREE.ConeGeometry(.038,.25,6),cloth2,side*.15,1.04,-.145,'tunic_fold');fold.rotation.z=side*.10;fold.rotation.x=.10;}
+  ell(body,shirt,[-.108,1.60,-.008],[.116,.095,.108],12).name='left_pectoral';
+  ell(body,shirt,[.108,1.60,-.008],[.116,.095,.108],12).name='right_pectoral';
+  ell(body,shirt,[0,1.24,-.005],[.17,.17,.112],12).name='abdomen';
   // Tunique ajustée avec pans séparés et coutures discrètes.
-  const tunic=add(body,new THREE.CylinderGeometry(.215,.285,.39,14,2,false),cloth2,0,1.005,0,'surcoat');tunic.scale.z=.79;
-  const frontShape=new THREE.Shape();frontShape.moveTo(-.16,1.20);frontShape.lineTo(.16,1.20);frontShape.lineTo(.135,.78);frontShape.lineTo(0,.72);frontShape.lineTo(-.135,.78);frontShape.closePath();
+  const tunic=add(body,new THREE.CylinderGeometry(.164,.205,.29,16,3,false),cloth2,0,1.075,0,'surcoat');tunic.scale.z=.79;
+  const frontShape=new THREE.Shape();frontShape.moveTo(-.125,1.205);frontShape.lineTo(.125,1.205);frontShape.lineTo(.108,.94);frontShape.lineTo(0,.885);frontShape.lineTo(-.108,.94);frontShape.closePath();
   add(body,new THREE.ShapeGeometry(frontShape,2),shirt,0,0,-.225,'front_tunic_panel');
   for(let i=0;i<8;i++){
-    const a=i*Math.PI/4;const seam=box(body,cloth2,[Math.sin(a)*.218,1.00,Math.cos(a)*.17],[.012,.30,.01]);seam.rotation.y=a;
+    const a=i*Math.PI/4;const seam=box(body,cloth2,[Math.sin(a)*.202,1.075,Math.cos(a)*.16],[.010,.22,.009]);seam.rotation.y=a;
   }
-  const hem=add(body,new THREE.CylinderGeometry(.285,.292,.035,14),gold,0,.805,0,'tunic_hem');hem.scale.z=.79;
+  const hem=add(body,new THREE.CylinderGeometry(.245,.250,.026,16),gold,0,.925,0,'tunic_hem');hem.scale.z=.79;
 
   // Cou, trapèzes et col : transition douce entre tête, épaules et torse.
-  const neck=add(body,new THREE.CylinderGeometry(.067,.085,.16,14,2),skin,0,1.73,0,'neck');
+  const neck=add(body,new THREE.CylinderGeometry(.064,.078,.17,14,2),skin,0,1.78,0,'neck');
   ell(body,shirt,[-.20,1.62,0],[.13,.12,.13],12);ell(body,shirt,[.20,1.62,0],[.13,.12,.13],12);
-  const collar=add(body,new THREE.CylinderGeometry(.085,.12,.055,14),leather,0,1.655,0,'low_collar');collar.scale.z=.80;
-  const collarTrim=add(body,new THREE.TorusGeometry(.095,.006,6,16),gold,0,1.625,0);collarTrim.rotation.x=Math.PI/2;
+  const collar=add(body,new THREE.CylinderGeometry(.082,.112,.050,14),leather,0,1.705,0,'low_collar');collar.scale.z=.80;
+  const collarTrim=add(body,new THREE.TorusGeometry(.091,.006,6,16),gold,0,1.677,0);collarTrim.rotation.x=Math.PI/2;
 
   // Armure posée sur le corps, sans cacher entièrement la silhouette humaine.
-  const chest=plate(body,steel,[0,1.47,-.143],[.235,.205,.055]);chest.name='breastplate_main';
-  plate(body,steelDark,[0,1.46,-.195],[.12,.145,.018]);
+  const chest=plate(body,steel,[0,1.47,-.122],[.158,.160,.040]);chest.name='breastplate_main';
+  plate(body,steelDark,[0,1.46,-.160],[.082,.110,.015]);
   const crest=add(body,new THREE.OctahedronGeometry(.047,1),gold,0,1.47,-.218);crest.scale.set(.8,1.15,.32);
   for(const side of [-1,1]){
-    const rib=box(body,steelDark,[side*.175,1.44,-.17],[.04,.15,.02]);rib.rotation.z=side*.16;
+    const rib=box(body,steelDark,[side*.158,1.44,-.165],[.034,.14,.018]);rib.rotation.z=side*.16;
     for(let j=0;j<3;j++)ell(body,gold,[side*.18,1.51-j*.055,-.192],[.009,.009,.006],7);
   }
   // Sangle, ceinture, boucle et sacoche.
-  const strap=box(body,leather,[-.055,1.38,-.207],[.055,.49,.025]);strap.rotation.z=-.43;
-  const strapEdge=box(body,gold,[-.071,1.38,-.222],[.008,.47,.006]);strapEdge.rotation.z=-.43;
-  const belt=add(body,new THREE.CylinderGeometry(.215,.215,.065,16),leatherDark,0,1.035,0);belt.scale.z=.8;
+  const strap=box(body,leather,[-.048,1.38,-.185],[.045,.45,.022]);strap.rotation.z=-.43;
+  const strapEdge=box(body,gold,[-.061,1.38,-.199],[.007,.43,.005]);strapEdge.rotation.z=-.43;
+  const belt=add(body,new THREE.CylinderGeometry(.184,.184,.065,16),leatherDark,0,1.035,0);belt.scale.z=.8;
   box(body,gold,[0,1.04,-.18],[.105,.085,.025]);box(body,leatherDark,[0,1.04,-.198],[.063,.052,.012]);
   const pouch=box(body,leather,[.205,.99,-.012],[.105,.13,.10]);pouch.rotation.z=-.12;
   box(body,gold,[.205,1.025,-.066],[.05,.012,.009]);
 
   // Bras avec volume du biceps, avant-bras, poignets et épaulières mieux proportionnés.
-  const armR=physique==='robuste'?.083:(physique==='fin'?.064:.073);
-  const aL=limb(-.355,1.58,.34,.31,shirt,skin,armR,'arm');
-  const aR=limb(.355,1.58,.34,.31,shirt,skin,armR,'arm');
+  const armR=physique==='robuste'?.064:(physique==='fin'?.048:.054);
+  const aL=limb(-.285,1.58,.34,.31,shirt,skin,armR,'arm');
+  const aR=limb(.285,1.58,.34,.31,shirt,skin,armR,'arm');
   for(const [side,arm] of [[-1,aL],[1,aR]]){
     const sleeve=add(arm.top,new THREE.CylinderGeometry(armR*.92,armR*1.24,.23,12,2),cloth2,0,-.115,0,'sleeve');sleeve.rotation.z=side*.06;
-    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.115,.13,.11],12);shoulder.name='shoulder_joint';
-    const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.125,.085,.12],side*.1);pauldron.name='shoulder_plate';
-    const rim=add(arm.top,new THREE.TorusGeometry(.085,.009,5,12),gold,0,-.075,-.005);rim.rotation.x=Math.PI/2;
+    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.078,.091,.076],12);shoulder.name='shoulder_joint';
+    const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.082,.058,.078],side*.1);pauldron.name='shoulder_plate';
+    const rim=add(arm.top,new THREE.TorusGeometry(.073,.008,5,12),gold,0,-.075,-.005);rim.rotation.x=Math.PI/2;
     const bracer=add(arm.low,new THREE.CylinderGeometry(.066,.082,.17,12,2),steelDark,0,-.18,-.005,'bracer');
     box(arm.low,steel,[0,-.18,-.067],[.085,.135,.018]);
     box(arm.low,gold,[0,-.105,-.079],[.085,.012,.01]);box(arm.low,gold,[0,-.255,-.079],[.085,.012,.01]);
@@ -1470,7 +1471,7 @@ function buildHumanoid(c={}){
   }
 
   // Tête — visage clairement lisible de face (traits poussés vers -Z, cheveux uniquement derrière / haut).
-  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.80,-.02);head.userData.faceDirection='-Z';body.add(head);
+  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.90,-.02);head.scale.setScalar(1.10);head.userData.faceDirection='-Z';body.add(head);
   const face=c.faceShape||'ovale';
   const skullW=face==='carre'?.155:(face==='fin'?.138:.148);
   // Crâne légèrement plus plat devant pour laisser sortir nez / yeux
@@ -1481,32 +1482,71 @@ function buildHumanoid(c={}){
     ell(head,skin,[side*.138,.01,.00],[.034,.060,.036],10).name='ear';
     ell(head,M(0xa96f60),[side*.150,.008,-.02],[.012,.028,.010],8);
     // Joues
-    ell(head,skin,[side*.090,-.005,-.110],[.050,.042,.028],12).name='cheek';
+    ell(head,skin,[side*.088,-.005,-.110],[.038,.032,.022],12).name='cheek';
     // Yeux bien visibles — pas de "masque" sombre autour du visage
-    ell(head,skin,[side*.055,.080,-.130],[.048,.032,.014],10).name='eye_socket';
-    ell(head,ivory,[side*.055,.080,-.152],[.040,.022,.012],12).name='eyeball';
-    ell(head,iris,[side*.055,.079,-.162],[.018,.018,.008],10).name='iris';
-    ell(head,eye,[side*.055,.079,-.170],[.008,.012,.005],8).name='pupil';
-    ell(head,ivory,[side*.048,.088,-.174],[.005,.006,.003],6);
+    ell(head,skin,[side*.055,.080,-.130],[.044,.029,.012],10).name='eye_socket';
+    ell(head,ivory,[side*.055,.080,-.150],[.036,.020,.010],12).name='eyeball';
+    ell(head,iris,[side*.055,.079,-.159],[.016,.016,.007],10).name='iris';
+    ell(head,eye,[side*.055,.079,-.166],[.007,.010,.004],8).name='pupil';
+    ell(head,ivory,[side*.048,.088,-.169],[.004,.005,.002],6);
     // Sourcils fins, au-dessus des yeux
     const brow=ell(head,hair,[side*.055,.125,-.140],[.045,.010,.012],10);brow.rotation.z=-side*.08;
   }
   // Nez / bouche / menton — volumes nets et avancés
-  ell(head,skin,[0,.028,-.145],[.022,.070,.028],10).name='nose_bridge';
-  ell(head,skin,[0,-.018,-.178],[.030,.024,.034],10).name='nose_tip';
-  for(const side of [-1,1]) ell(head,skin,[side*.024,-.028,-.165],[.013,.012,.018],8).name='nostril_wing';
-  ell(head,lip,[0,-.082,-.160],[.042,.012,.012],10).name='upper_lip';
-  ell(head,lip,[0,-.100,-.158],[.038,.011,.012],10).name='lower_lip';
-  ell(head,skin,[0,-.138,-.120],[.055,.034,.042],10).name='chin';
+  ell(head,skin,[0,.028,-.142],[.018,.055,.022],10).name='nose_bridge';
+  ell(head,skin,[0,-.018,-.170],[.022,.018,.026],10).name='nose_tip';
+  for(const side of [-1,1]) ell(head,skin,[side*.019,-.028,-.160],[.010,.010,.014],8).name='nostril_wing';
+  ell(head,lip,[0,-.082,-.151],[.032,.009,.009],10).name='upper_lip';
+  ell(head,lip,[0,-.100,-.149],[.030,.008,.009],10).name='lower_lip';
+  ell(head,skin,[0,-.138,-.115],[.050,.030,.038],10).name='chin';
 
   // === CHEVEUX SIMPLES : uniquement le dessus du crâne, visage 100% dégagé ===
   // Pas de frange, pas de mèches latérales, pas de volume devant.
   const hairCap=ell(head,hair,[0,.250,.060],[.145,.080,.100],12);hairCap.name='hair_cap';
   const hairBack=ell(head,hair,[0,.100,.120],[.130,.120,.070],12);hairBack.name='hair_back';
-  // Petites mèches AU SOMMET uniquement (vers l'arrière)
-  for(const side of [-1,1]){
-    const topLock=add(head,new THREE.ConeGeometry(.030,.08,5),hair,side*.06,.310,.050,'hair_top');
-    topLock.rotation.x=.35;
+  // Coiffures différenciées pour les habitants : la tête du héros garde sa coupe sobre.
+  const hairStyle=c.hairStyle||'hero';
+  if(hairStyle==='long'){
+    ell(head,hair,[-.132,.025,.095],[.055,.205,.075],12);
+    ell(head,hair,[.132,.025,.095],[.055,.205,.075],12);
+    ell(head,hair,[0,-.075,.125],[.125,.12,.065],12);
+  }else if(hairStyle==='bun'){
+    ell(head,hair,[0,.235,.115],[.075,.075,.075],12);
+    ell(head,hair,[0,.12,.135],[.13,.12,.065],12);
+  }else if(hairStyle==='hood'){
+    ell(head,cloth2,[0,.105,.075],[.178,.225,.145],14);
+    ell(head,cloth2,[0,.245,.035],[.155,.085,.12],14);
+  }else if(hairStyle==='braid'){
+    ell(head,hair,[0,.12,.13],[.13,.12,.07],12);
+    for(let j=0;j<4;j++)ell(head,hair,[.145,.01-j*.075,.10],[.035,.055,.04],8);
+  }else{
+    // Volume latéral et mèches frontales : le visage reste dégagé, mais le crâne ne paraît plus nu.
+    for(const side of [-1,1]){
+      const topLock=add(head,new THREE.ConeGeometry(.030,.075,7),hair,side*.065,.305,.025,'hair_top');
+      topLock.rotation.x=.28;topLock.rotation.z=-side*.18;
+      ell(head,hair,[side*.132,.085,.045],[.035,.105,.075],12);
+    }
+    const fringeL=ell(head,hair,[-.052,.198,-.086],[.060,.066,.040],14);
+    fringeL.rotation.z=-.24;fringeL.rotation.y=-.10;
+    const fringeR=ell(head,hair,[.040,.211,-.090],[.052,.058,.040],14);
+    fringeR.rotation.z=.18;fringeR.rotation.y=.12;
+    if(hairStyle!=='short'){
+      const fringeCenter=ell(head,hair,[-.005,.238,-.066],[.050,.045,.043],12);
+      fringeCenter.rotation.z=-.12;
+    }
+  }
+  if(c.npcRole==='fermier'||c.npcRole==='artisane'){
+    const apron=box(body,leather,[0,1.02,-.238],[.20,.31,.025]);
+    apron.name='work_apron';
+    box(body,gold,[0,.88,-.257],[.12,.012,.008]);
+  }
+  if(c.npcRole==='chasseur'){
+    const scarf=add(body,new THREE.TorusGeometry(.105,.025,6,14),clothLight,0,1.64,0,'hunter_scarf');
+    scarf.rotation.x=Math.PI/2;
+  }
+  if(c.npcRole==='berger'){
+    add(head,new THREE.CylinderGeometry(.19,.16,.045,12),leather,0,.205,.02,'shepherd_hat_brim');
+    add(head,new THREE.ConeGeometry(.12,.15,10),leather,0,.29,.02,'shepherd_hat_crown');
   }
   // Barbe uniquement si demandée (sinon rien autour du visage)
   if(c.beard&&c.beard!=='none'){
@@ -5577,11 +5617,19 @@ window.addEventListener("load",()=>{
         const ang = Math.random()*6.28, rr = 2+Math.random()*Math.max(3,(v.radius||10)*0.45);
         const x=v.x+Math.cos(ang)*rr, z=v.z+Math.sin(ang)*rr;
         try{
-          const h = buildHumanoid({skin:0xc99a70,shirt:0x6a8a4a,pants:0x4a3a2a,boot:0x2a1a12,hair:0x3a2a1a,belt:0x8a6a3a,eye:0x222222,people:"humain"});
+          const role = rolesV[i%rolesV.length];
+          const npcLooks = [
+            {skin:0xc99a70,shirt:0x6a8a4a,pants:0x4a3a2a,hair:0x3a2a1a,physique:'normal',hairStyle:'short',faceShape:'ovale'},
+            {skin:0x8b573b,shirt:0x8a6545,pants:0x303b4a,hair:0x211812,physique:'robuste',hairStyle:'long',faceShape:'carre',beard:'full'},
+            {skin:0xe0b58e,shirt:0x7a526c,pants:0x493b50,hair:0x9a6b3d,physique:'fin',hairStyle:'bun',faceShape:'fin'},
+            {skin:0xb97850,shirt:0x496c7a,pants:0x3c3a32,hair:0x241b17,physique:'normal',hairStyle:'braid',faceShape:'ovale'},
+            {skin:0xdeb58c,shirt:0x8b7747,pants:0x514333,hair:0x6b4227,physique:'robuste',hairStyle:'hood',faceShape:'carre'}
+          ];
+          const look = npcLooks[(i+Math.abs(v.x|0))%npcLooks.length];
+          const h = buildHumanoid({...look,boot:0x2a1a12,belt:0x8a6a3a,eye:0x222222,people:"humain",npcRole:role});
           h.group.position.set(x,heightAt(x,z),z);
           this.scene.add(h.group);
           const nm = namesV[(i+Math.abs(v.x|0))%namesV.length];
-          const role = rolesV[i%rolesV.length];
           const isQuest = i===0;
           const npc = {
             name: nm,
