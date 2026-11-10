@@ -1419,18 +1419,18 @@ function buildHumanoid(c={}){
   const torsoProfile=[new THREE.Vector2(.165,-.27),new THREE.Vector2(.178,-.20),new THREE.Vector2(.192,-.08),new THREE.Vector2(.215,.06),new THREE.Vector2(.250,.22),new THREE.Vector2(.268,.34),new THREE.Vector2(.245,.43),new THREE.Vector2(.18,.46)];
   const torso=add(body,new THREE.LatheGeometry(torsoProfile,18),shirt,0,1.39,0,'anatomical_torso');torso.scale.z=.82;
   // Plis géométriques de la tunique : volumes larges, lisibles à distance.
-  for(const side of [-1,1]){const fold=add(body,new THREE.ConeGeometry(.045,.34,5),cloth2,side*.17,1.12,-.151,'tunic_fold');fold.rotation.z=side*.10;fold.rotation.x=.10;}
+  for(const side of [-1,1]){const fold=add(body,new THREE.ConeGeometry(.038,.25,6),cloth2,side*.15,1.04,-.145,'tunic_fold');fold.rotation.z=side*.10;fold.rotation.x=.10;}
   ell(body,shirt,[-.120,1.60,-.008],[.132,.105,.120],12).name='left_pectoral';
   ell(body,shirt,[.120,1.60,-.008],[.132,.105,.120],12).name='right_pectoral';
   ell(body,shirt,[0,1.24,-.005],[.19,.19,.125],12).name='abdomen';
   // Tunique ajustée avec pans séparés et coutures discrètes.
-  const tunic=add(body,new THREE.CylinderGeometry(.190,.238,.39,14,2,false),cloth2,0,1.005,0,'surcoat');tunic.scale.z=.79;
-  const frontShape=new THREE.Shape();frontShape.moveTo(-.16,1.20);frontShape.lineTo(.16,1.20);frontShape.lineTo(.135,.78);frontShape.lineTo(0,.72);frontShape.lineTo(-.135,.78);frontShape.closePath();
+  const tunic=add(body,new THREE.CylinderGeometry(.178,.222,.29,16,3,false),cloth2,0,1.075,0,'surcoat');tunic.scale.z=.79;
+  const frontShape=new THREE.Shape();frontShape.moveTo(-.15,1.205);frontShape.lineTo(.15,1.205);frontShape.lineTo(.125,.94);frontShape.lineTo(0,.885);frontShape.lineTo(-.125,.94);frontShape.closePath();
   add(body,new THREE.ShapeGeometry(frontShape,2),shirt,0,0,-.225,'front_tunic_panel');
   for(let i=0;i<8;i++){
-    const a=i*Math.PI/4;const seam=box(body,cloth2,[Math.sin(a)*.218,1.00,Math.cos(a)*.17],[.012,.30,.01]);seam.rotation.y=a;
+    const a=i*Math.PI/4;const seam=box(body,cloth2,[Math.sin(a)*.202,1.075,Math.cos(a)*.16],[.010,.22,.009]);seam.rotation.y=a;
   }
-  const hem=add(body,new THREE.CylinderGeometry(.285,.292,.035,14),gold,0,.805,0,'tunic_hem');hem.scale.z=.79;
+  const hem=add(body,new THREE.CylinderGeometry(.245,.250,.026,16),gold,0,.925,0,'tunic_hem');hem.scale.z=.79;
 
   // Cou, trapèzes et col : transition douce entre tête, épaules et torse.
   const neck=add(body,new THREE.CylinderGeometry(.067,.085,.16,14,2),skin,0,1.73,0,'neck');
