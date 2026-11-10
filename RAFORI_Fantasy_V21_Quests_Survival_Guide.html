@@ -1368,7 +1368,7 @@ function buildHumanoid(c={}){
 
   // Jambes : cuisses pleines, genoux lisibles, mollets galbés et bottes orientées vers l'avant (-Z).
   const physique=c.physique||'normal';
-  const legR=physique==='robuste'?.108:(physique==='fin'?.083:.094);
+  const legR=physique==='robuste'?.104:(physique==='fin'?.080:.090);
   ell(body,pants,[0,.98,0],[.235,.16,.155],14).name='pelvis';
   const limb=(x,y,upperLen,lowerLen,upperMat,lowerMat,radius,kind)=>{
     const top=new THREE.Group();top.position.set(x,y,0);body.add(top);
@@ -1404,8 +1404,8 @@ function buildHumanoid(c={}){
     }
     return{top,low};
   };
-  const lL=limb(-.125,.94,.43,.42,pants,pants,legR,'leg');
-  const lR=limb(.125,.94,.43,.42,pants,pants,legR,'leg');
+  const lL=limb(-.12,.94,.47,.46,pants,pants,legR,'leg');
+  const lR=limb(.12,.94,.47,.46,pants,pants,legR,'leg');
   for(const [side,leg] of [[-1,lL],[1,lR]]){
     // Pantalon et genouillère anatomiquement alignés avec le genou.
     const knee=plate(leg.low,steel,[0,-.045,-.073],[.078,.075,.027],side*.06);knee.name='knee_guard';
@@ -1416,15 +1416,15 @@ function buildHumanoid(c={}){
 
   // Bassin et torse sculptés : taille resserrée, cage thoracique, pectoraux et épaules.
   ell(body,pants,[0,1.02,0],[.205,.15,.14],14);
-  const torsoProfile=[new THREE.Vector2(.19,-.27),new THREE.Vector2(.205,-.20),new THREE.Vector2(.22,-.08),new THREE.Vector2(.25,.06),new THREE.Vector2(.30,.22),new THREE.Vector2(.325,.34),new THREE.Vector2(.30,.43),new THREE.Vector2(.21,.46)];
+  const torsoProfile=[new THREE.Vector2(.175,-.27),new THREE.Vector2(.188,-.20),new THREE.Vector2(.205,-.08),new THREE.Vector2(.232,.06),new THREE.Vector2(.272,.22),new THREE.Vector2(.292,.34),new THREE.Vector2(.270,.43),new THREE.Vector2(.19,.46)];
   const torso=add(body,new THREE.LatheGeometry(torsoProfile,18),shirt,0,1.39,0,'anatomical_torso');torso.scale.z=.82;
   // Plis géométriques de la tunique : volumes larges, lisibles à distance.
   for(const side of [-1,1]){const fold=add(body,new THREE.ConeGeometry(.045,.34,5),cloth2,side*.17,1.12,-.151,'tunic_fold');fold.rotation.z=side*.10;fold.rotation.x=.10;}
-  ell(body,shirt,[-.145,1.60,-.008],[.17,.125,.145],12).name='left_pectoral';
-  ell(body,shirt,[.145,1.60,-.008],[.17,.125,.145],12).name='right_pectoral';
+  ell(body,shirt,[-.132,1.60,-.008],[.148,.115,.132],12).name='left_pectoral';
+  ell(body,shirt,[.132,1.60,-.008],[.148,.115,.132],12).name='right_pectoral';
   ell(body,shirt,[0,1.24,-.005],[.19,.19,.125],12).name='abdomen';
   // Tunique ajustée avec pans séparés et coutures discrètes.
-  const tunic=add(body,new THREE.CylinderGeometry(.215,.285,.39,14,2,false),cloth2,0,1.005,0,'surcoat');tunic.scale.z=.79;
+  const tunic=add(body,new THREE.CylinderGeometry(.202,.258,.39,14,2,false),cloth2,0,1.005,0,'surcoat');tunic.scale.z=.79;
   const frontShape=new THREE.Shape();frontShape.moveTo(-.16,1.20);frontShape.lineTo(.16,1.20);frontShape.lineTo(.135,.78);frontShape.lineTo(0,.72);frontShape.lineTo(-.135,.78);frontShape.closePath();
   add(body,new THREE.ShapeGeometry(frontShape,2),shirt,0,0,-.225,'front_tunic_panel');
   for(let i=0;i<8;i++){
@@ -1439,30 +1439,30 @@ function buildHumanoid(c={}){
   const collarTrim=add(body,new THREE.TorusGeometry(.095,.006,6,16),gold,0,1.625,0);collarTrim.rotation.x=Math.PI/2;
 
   // Armure posée sur le corps, sans cacher entièrement la silhouette humaine.
-  const chest=plate(body,steel,[0,1.47,-.143],[.235,.205,.055]);chest.name='breastplate_main';
-  plate(body,steelDark,[0,1.46,-.195],[.12,.145,.018]);
+  const chest=plate(body,steel,[0,1.47,-.143],[.208,.190,.052]);chest.name='breastplate_main';
+  plate(body,steelDark,[0,1.46,-.190],[.106,.135,.018]);
   const crest=add(body,new THREE.OctahedronGeometry(.047,1),gold,0,1.47,-.218);crest.scale.set(.8,1.15,.32);
   for(const side of [-1,1]){
-    const rib=box(body,steelDark,[side*.175,1.44,-.17],[.04,.15,.02]);rib.rotation.z=side*.16;
+    const rib=box(body,steelDark,[side*.158,1.44,-.165],[.034,.14,.018]);rib.rotation.z=side*.16;
     for(let j=0;j<3;j++)ell(body,gold,[side*.18,1.51-j*.055,-.192],[.009,.009,.006],7);
   }
   // Sangle, ceinture, boucle et sacoche.
   const strap=box(body,leather,[-.055,1.38,-.207],[.055,.49,.025]);strap.rotation.z=-.43;
   const strapEdge=box(body,gold,[-.071,1.38,-.222],[.008,.47,.006]);strapEdge.rotation.z=-.43;
-  const belt=add(body,new THREE.CylinderGeometry(.215,.215,.065,16),leatherDark,0,1.035,0);belt.scale.z=.8;
+  const belt=add(body,new THREE.CylinderGeometry(.198,.198,.065,16),leatherDark,0,1.035,0);belt.scale.z=.8;
   box(body,gold,[0,1.04,-.18],[.105,.085,.025]);box(body,leatherDark,[0,1.04,-.198],[.063,.052,.012]);
   const pouch=box(body,leather,[.205,.99,-.012],[.105,.13,.10]);pouch.rotation.z=-.12;
   box(body,gold,[.205,1.025,-.066],[.05,.012,.009]);
 
   // Bras avec volume du biceps, avant-bras, poignets et épaulières mieux proportionnés.
-  const armR=physique==='robuste'?.083:(physique==='fin'?.064:.073);
-  const aL=limb(-.355,1.58,.34,.31,shirt,skin,armR,'arm');
-  const aR=limb(.355,1.58,.34,.31,shirt,skin,armR,'arm');
+  const armR=physique==='robuste'?.074:(physique==='fin'?.055:.063);
+  const aL=limb(-.335,1.58,.34,.31,shirt,skin,armR,'arm');
+  const aR=limb(.335,1.58,.34,.31,shirt,skin,armR,'arm');
   for(const [side,arm] of [[-1,aL],[1,aR]]){
     const sleeve=add(arm.top,new THREE.CylinderGeometry(armR*.92,armR*1.24,.23,12,2),cloth2,0,-.115,0,'sleeve');sleeve.rotation.z=side*.06;
-    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.115,.13,.11],12);shoulder.name='shoulder_joint';
-    const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.125,.085,.12],side*.1);pauldron.name='shoulder_plate';
-    const rim=add(arm.top,new THREE.TorusGeometry(.085,.009,5,12),gold,0,-.075,-.005);rim.rotation.x=Math.PI/2;
+    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.098,.112,.095],12);shoulder.name='shoulder_joint';
+    const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.105,.073,.098],side*.1);pauldron.name='shoulder_plate';
+    const rim=add(arm.top,new THREE.TorusGeometry(.073,.008,5,12),gold,0,-.075,-.005);rim.rotation.x=Math.PI/2;
     const bracer=add(arm.low,new THREE.CylinderGeometry(.066,.082,.17,12,2),steelDark,0,-.18,-.005,'bracer');
     box(arm.low,steel,[0,-.18,-.067],[.085,.135,.018]);
     box(arm.low,gold,[0,-.105,-.079],[.085,.012,.01]);box(arm.low,gold,[0,-.255,-.079],[.085,.012,.01]);
@@ -1471,7 +1471,7 @@ function buildHumanoid(c={}){
   }
 
   // Tête — visage clairement lisible de face (traits poussés vers -Z, cheveux uniquement derrière / haut).
-  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.80,-.02);head.scale.setScalar(.92);head.userData.faceDirection='-Z';body.add(head);
+  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.82,-.02);head.scale.setScalar(1.04);head.userData.faceDirection='-Z';body.add(head);
   const face=c.faceShape||'ovale';
   const skullW=face==='carre'?.155:(face==='fin'?.138:.148);
   // Crâne légèrement plus plat devant pour laisser sortir nez / yeux
