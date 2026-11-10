@@ -1372,7 +1372,7 @@ function buildHumanoid(c={}){
   const leather=M(c.belt||outfit.belt),leatherDark=M(0x2b1b16),gold=M(c.trim||0xc99a42,{metalness:.38,roughness:.48});
   const steel=M(c.armor||0x718493,{metalness:.38,roughness:.48}),steelDark=M(0x344652,{metalness:.42,roughness:.52});
   const cloth2=M(c.secondary||outfit.secondary),clothLight=M(0xb4a18a),ivory=M(0xf1e8dc),iris=M(c.iris||0x80542f),lip=M(0x985b52);
-  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V14_POLYGON_HERO';
+  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V23_HUMAN_REFINEMENT';
   const body=new THREE.Group();body.name='characterRig';group.add(body);
   const add=(parent,geo,mat,x=0,y=0,z=0,name='')=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.name=name;o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;};
   const ell=(parent,mat,pos,scale,seg=14)=>{const o=add(parent,new THREE.SphereGeometry(1,seg,Math.max(8,Math.round(seg*.7))),mat,...pos);o.scale.set(...scale);return o;};
@@ -1451,7 +1451,8 @@ function buildHumanoid(c={}){
 
   // Cou, trapèzes et col : transition douce entre tête, épaules et torse.
   const neck=add(body,new THREE.CylinderGeometry(.064,.078,.17,14,2),skin,0,1.78,0,'neck');
-  ell(body,shirt,[-.20,1.62,0],[.13,.12,.13],12);ell(body,shirt,[.20,1.62,0],[.13,.12,.13],12);
+  ell(body,shirt,[-.185,1.625,0],[.115,.095,.112],14).name='left_trapezius';ell(body,shirt,[.185,1.625,0],[.115,.095,.112],14).name='right_trapezius';
+  ell(body,skin,[0,1.785,0],[.067,.085,.068],12).name='neck_base';
   const collar=add(body,new THREE.CylinderGeometry(.082,.112,.050,14),leather,0,1.705,0,'low_collar');collar.scale.z=.80;
   const collarTrim=add(body,new THREE.TorusGeometry(.091,.006,6,16),gold,0,1.677,0);collarTrim.rotation.x=Math.PI/2;
 
@@ -1477,7 +1478,7 @@ function buildHumanoid(c={}){
   const aR=limb(.265,1.58,.34,.31,shirt,skin,armR,'arm');
   for(const [side,arm] of [[-1,aL],[1,aR]]){
     const sleeve=add(arm.top,new THREE.CylinderGeometry(armR*.84,armR*1.12,.21,12,2),cloth2,0,-.115,0,'sleeve');sleeve.rotation.z=side*.06;
-    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.066,.078,.064],12);shoulder.name='shoulder_joint';
+    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.057,.069,.056],12);shoulder.name='shoulder_joint';
     const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.068,.045,.065],side*.1);pauldron.name='shoulder_plate';
     const rim=add(arm.top,new THREE.TorusGeometry(.061,.006,5,12),gold,0,-.075,-.005);rim.rotation.x=Math.PI/2;
     const bracer=add(arm.low,new THREE.CylinderGeometry(.052,.064,.14,12,2),steelDark,0,-.18,-.005,'bracer');
@@ -1491,31 +1492,42 @@ function buildHumanoid(c={}){
   const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.90,-.02);head.scale.setScalar(1.10);head.userData.faceMeshesAttached=true;head.userData.faceDirection='-Z';body.add(head);
   const face=c.faceShape||'ovale';
   const skullW=face==='carre'?.155:(face==='fin'?.138:.148);
-  // Crâne légèrement plus plat devant pour laisser sortir nez / yeux
-  ell(head,skin,[0,.070,.02],[skullW,.195,.125],18).name='face_skull';
-  ell(head,skin,[0,-.085,.00],[face==='carre'?.130:.118,.105,.118],16).name='jawline';
+  // Crâne anatomique : front, tempes, pommettes et mâchoire forment un seul volume continu.
+  const headProfile=[
+    new THREE.Vector2(.018,-.190),new THREE.Vector2(.070,-.177),
+    new THREE.Vector2(face==='carre'?.112:.101,-.135),new THREE.Vector2(face==='carre'?.128:.113,-.075),
+    new THREE.Vector2(.143,-.005),new THREE.Vector2(.148,.065),
+    new THREE.Vector2(.137,.135),new THREE.Vector2(.112,.198),
+    new THREE.Vector2(.070,.235),new THREE.Vector2(.018,.248)
+  ];
+  const skull=add(head,new THREE.LatheGeometry(headProfile,24),skin,0,0,0,'face_skull');
+  skull.scale.z=.91;
+  // Menton et angle mandibulaire subtils, sans boule séparée sous le visage.
+  ell(head,skin,[0,-.128,-.012],[face==='carre'?.080:.069,.045,.082],16).name='chin_volume';
   // Traits du visage BIEN EN AVANT (Z négatif = face caméra)
   for(const side of [-1,1]){
     ell(head,skin,[side*.138,.01,.00],[.034,.060,.036],10).name='ear';
     ell(head,M(0xa96f60),[side*.150,.008,-.02],[.012,.028,.010],8);
     // Joues
-    ell(head,skin,[side*.088,-.005,-.110],[.038,.032,.022],12).name='cheek';
+    ell(head,skin,[side*.087,-.010,-.105],[.043,.034,.026],14).name='cheek';
+    ell(head,skin,[side*.056,.043,-.111],[.047,.021,.016],12).name='upper_cheek';
     // Yeux bien visibles — pas de "masque" sombre autour du visage
-    ell(head,skin,[side*.055,.080,-.130],[.044,.029,.012],10).name='eye_socket';
-    ell(head,ivory,[side*.055,.080,-.150],[.036,.020,.010],12).name='eyeball';
-    ell(head,iris,[side*.055,.079,-.159],[.016,.016,.007],10).name='iris';
-    ell(head,eye,[side*.055,.079,-.166],[.007,.010,.004],8).name='pupil';
-    ell(head,ivory,[side*.048,.088,-.169],[.004,.005,.002],6);
+    ell(head,skin,[side*.055,.078,-.123],[.047,.031,.014],12).name='eye_socket';
+    ell(head,ivory,[side*.055,.078,-.139],[.034,.019,.012],14).name='eyeball';
+    ell(head,iris,[side*.055,.077,-.150],[.015,.016,.008],12).name='iris';
+    ell(head,eye,[side*.055,.077,-.157],[.007,.010,.005],10).name='pupil';
+    ell(head,ivory,[side*.049,.086,-.161],[.004,.005,.003],7);
+    const lowerLid=ell(head,skin,[side*.055,.056,-.141],[.034,.006,.009],12);lowerLid.name='lower_eyelid';
     // Sourcils fins, au-dessus des yeux
-    const brow=ell(head,hair,[side*.055,.125,-.140],[.045,.010,.012],10);brow.rotation.z=-side*.08;
+    const brow=ell(head,hair,[side*.055,.119,-.126],[.046,.010,.012],12);brow.rotation.z=-side*.08;
   }
   // Nez / bouche / menton — volumes nets et avancés
-  ell(head,skin,[0,.028,-.142],[.018,.055,.022],10).name='nose_bridge';
-  ell(head,skin,[0,-.018,-.170],[.022,.018,.026],10).name='nose_tip';
-  for(const side of [-1,1]) ell(head,skin,[side*.019,-.028,-.160],[.010,.010,.014],8).name='nostril_wing';
-  ell(head,lip,[0,-.082,-.151],[.032,.009,.009],10).name='upper_lip';
-  ell(head,lip,[0,-.100,-.149],[.030,.008,.009],10).name='lower_lip';
-  ell(head,skin,[0,-.138,-.115],[.050,.030,.038],10).name='chin';
+  ell(head,skin,[0,.025,-.132],[.020,.057,.025],12).name='nose_bridge';
+  ell(head,skin,[0,-.025,-.158],[.025,.020,.029],12).name='nose_tip';
+  for(const side of [-1,1]) ell(head,skin,[side*.021,-.032,-.147],[.011,.011,.014],9).name='nostril_wing';
+  ell(head,lip,[0,-.078,-.132],[.031,.008,.010],12).name='upper_lip';
+  ell(head,lip,[0,-.096,-.130],[.028,.008,.010],12).name='lower_lip';
+  ell(head,skin,[0,-.139,-.090],[.046,.026,.035],12).name='chin';
 
   // === CHEVEUX SIMPLES : uniquement le dessus du crâne, visage 100% dégagé ===
   // Pas de frange, pas de mèches latérales, pas de volume devant.
@@ -1584,7 +1596,7 @@ function buildHumanoid(c={}){
   const sheath=null;
 
   body.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=22;group.userData.outfitStyle=c.outfitStyle||'aventurier';
+  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=23;group.userData.outfitStyle=c.outfitStyle||'aventurier';
   return{group,body,torso:body,head,cape,add,M,mats:{skin,shirt,pants,boot},aL,aR,lL,lR,sheathGroup,sheath};
 }
 function animateHumanoid(h,phase,amp,t,running=false){
