@@ -1471,7 +1471,7 @@ function buildHumanoid(c={}){
   }
 
   // Tête — visage clairement lisible de face (traits poussés vers -Z, cheveux uniquement derrière / haut).
-  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.80,-.02);head.userData.faceDirection='-Z';body.add(head);
+  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.80,-.02);head.scale.setScalar(.92);head.userData.faceDirection='-Z';body.add(head);
   const face=c.faceShape||'ovale';
   const skullW=face==='carre'?.155:(face==='fin'?.138:.148);
   // Crâne légèrement plus plat devant pour laisser sortir nez / yeux
