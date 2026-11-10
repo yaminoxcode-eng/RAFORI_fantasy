@@ -1416,16 +1416,16 @@ function buildHumanoid(c={}){
 
   // Bassin et torse sculptés : taille resserrée, cage thoracique, pectoraux et épaules.
   ell(body,pants,[0,1.02,0],[.205,.15,.14],14);
-  const torsoProfile=[new THREE.Vector2(.165,-.27),new THREE.Vector2(.178,-.20),new THREE.Vector2(.192,-.08),new THREE.Vector2(.215,.06),new THREE.Vector2(.250,.22),new THREE.Vector2(.268,.34),new THREE.Vector2(.245,.43),new THREE.Vector2(.18,.46)];
+  const torsoProfile=[new THREE.Vector2(.155,-.27),new THREE.Vector2(.166,-.20),new THREE.Vector2(.180,-.08),new THREE.Vector2(.200,.06),new THREE.Vector2(.226,.22),new THREE.Vector2(.238,.34),new THREE.Vector2(.220,.43),new THREE.Vector2(.17,.46)];
   const torso=add(body,new THREE.LatheGeometry(torsoProfile,18),shirt,0,1.39,0,'anatomical_torso');torso.scale.z=.82;
   // Plis géométriques de la tunique : volumes larges, lisibles à distance.
   for(const side of [-1,1]){const fold=add(body,new THREE.ConeGeometry(.038,.25,6),cloth2,side*.15,1.04,-.145,'tunic_fold');fold.rotation.z=side*.10;fold.rotation.x=.10;}
-  ell(body,shirt,[-.120,1.60,-.008],[.132,.105,.120],12).name='left_pectoral';
-  ell(body,shirt,[.120,1.60,-.008],[.132,.105,.120],12).name='right_pectoral';
-  ell(body,shirt,[0,1.24,-.005],[.19,.19,.125],12).name='abdomen';
+  ell(body,shirt,[-.108,1.60,-.008],[.116,.095,.108],12).name='left_pectoral';
+  ell(body,shirt,[.108,1.60,-.008],[.116,.095,.108],12).name='right_pectoral';
+  ell(body,shirt,[0,1.24,-.005],[.17,.17,.112],12).name='abdomen';
   // Tunique ajustée avec pans séparés et coutures discrètes.
-  const tunic=add(body,new THREE.CylinderGeometry(.178,.222,.29,16,3,false),cloth2,0,1.075,0,'surcoat');tunic.scale.z=.79;
-  const frontShape=new THREE.Shape();frontShape.moveTo(-.15,1.205);frontShape.lineTo(.15,1.205);frontShape.lineTo(.125,.94);frontShape.lineTo(0,.885);frontShape.lineTo(-.125,.94);frontShape.closePath();
+  const tunic=add(body,new THREE.CylinderGeometry(.164,.205,.29,16,3,false),cloth2,0,1.075,0,'surcoat');tunic.scale.z=.79;
+  const frontShape=new THREE.Shape();frontShape.moveTo(-.125,1.205);frontShape.lineTo(.125,1.205);frontShape.lineTo(.108,.94);frontShape.lineTo(0,.885);frontShape.lineTo(-.108,.94);frontShape.closePath();
   add(body,new THREE.ShapeGeometry(frontShape,2),shirt,0,0,-.225,'front_tunic_panel');
   for(let i=0;i<8;i++){
     const a=i*Math.PI/4;const seam=box(body,cloth2,[Math.sin(a)*.202,1.075,Math.cos(a)*.16],[.010,.22,.009]);seam.rotation.y=a;
@@ -1439,29 +1439,29 @@ function buildHumanoid(c={}){
   const collarTrim=add(body,new THREE.TorusGeometry(.095,.006,6,16),gold,0,1.625,0);collarTrim.rotation.x=Math.PI/2;
 
   // Armure posée sur le corps, sans cacher entièrement la silhouette humaine.
-  const chest=plate(body,steel,[0,1.47,-.132],[.180,.172,.045]);chest.name='breastplate_main';
-  plate(body,steelDark,[0,1.46,-.175],[.092,.120,.016]);
+  const chest=plate(body,steel,[0,1.47,-.122],[.158,.160,.040]);chest.name='breastplate_main';
+  plate(body,steelDark,[0,1.46,-.160],[.082,.110,.015]);
   const crest=add(body,new THREE.OctahedronGeometry(.047,1),gold,0,1.47,-.218);crest.scale.set(.8,1.15,.32);
   for(const side of [-1,1]){
     const rib=box(body,steelDark,[side*.158,1.44,-.165],[.034,.14,.018]);rib.rotation.z=side*.16;
     for(let j=0;j<3;j++)ell(body,gold,[side*.18,1.51-j*.055,-.192],[.009,.009,.006],7);
   }
   // Sangle, ceinture, boucle et sacoche.
-  const strap=box(body,leather,[-.055,1.38,-.207],[.055,.49,.025]);strap.rotation.z=-.43;
-  const strapEdge=box(body,gold,[-.071,1.38,-.222],[.008,.47,.006]);strapEdge.rotation.z=-.43;
-  const belt=add(body,new THREE.CylinderGeometry(.198,.198,.065,16),leatherDark,0,1.035,0);belt.scale.z=.8;
+  const strap=box(body,leather,[-.048,1.38,-.185],[.045,.45,.022]);strap.rotation.z=-.43;
+  const strapEdge=box(body,gold,[-.061,1.38,-.199],[.007,.43,.005]);strapEdge.rotation.z=-.43;
+  const belt=add(body,new THREE.CylinderGeometry(.184,.184,.065,16),leatherDark,0,1.035,0);belt.scale.z=.8;
   box(body,gold,[0,1.04,-.18],[.105,.085,.025]);box(body,leatherDark,[0,1.04,-.198],[.063,.052,.012]);
   const pouch=box(body,leather,[.205,.99,-.012],[.105,.13,.10]);pouch.rotation.z=-.12;
   box(body,gold,[.205,1.025,-.066],[.05,.012,.009]);
 
   // Bras avec volume du biceps, avant-bras, poignets et épaulières mieux proportionnés.
-  const armR=physique==='robuste'?.070:(physique==='fin'?.052:.058);
-  const aL=limb(-.305,1.58,.34,.31,shirt,skin,armR,'arm');
-  const aR=limb(.305,1.58,.34,.31,shirt,skin,armR,'arm');
+  const armR=physique==='robuste'?.064:(physique==='fin'?.048:.054);
+  const aL=limb(-.285,1.58,.34,.31,shirt,skin,armR,'arm');
+  const aR=limb(.285,1.58,.34,.31,shirt,skin,armR,'arm');
   for(const [side,arm] of [[-1,aL],[1,aR]]){
     const sleeve=add(arm.top,new THREE.CylinderGeometry(armR*.92,armR*1.24,.23,12,2),cloth2,0,-.115,0,'sleeve');sleeve.rotation.z=side*.06;
-    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.086,.100,.084],12);shoulder.name='shoulder_joint';
-    const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.092,.065,.086],side*.1);pauldron.name='shoulder_plate';
+    const shoulder=ell(arm.top,shirt,[0,-.02,0],[.078,.091,.076],12);shoulder.name='shoulder_joint';
+    const pauldron=plate(arm.top,steel,[side*.005,-.025,0],[.082,.058,.078],side*.1);pauldron.name='shoulder_plate';
     const rim=add(arm.top,new THREE.TorusGeometry(.073,.008,5,12),gold,0,-.075,-.005);rim.rotation.x=Math.PI/2;
     const bracer=add(arm.low,new THREE.CylinderGeometry(.066,.082,.17,12,2),steelDark,0,-.18,-.005,'bracer');
     box(arm.low,steel,[0,-.18,-.067],[.085,.135,.018]);
@@ -1471,7 +1471,7 @@ function buildHumanoid(c={}){
   }
 
   // Tête — visage clairement lisible de face (traits poussés vers -Z, cheveux uniquement derrière / haut).
-  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.82,-.02);head.scale.setScalar(1.12);head.userData.faceDirection='-Z';body.add(head);
+  const head=new THREE.Group();head.name='head_pivot';head.position.set(0,1.82,-.02);head.scale.setScalar(1.20);head.userData.faceDirection='-Z';body.add(head);
   const face=c.faceShape||'ovale';
   const skullW=face==='carre'?.155:(face==='fin'?.138:.148);
   // Crâne légèrement plus plat devant pour laisser sortir nez / yeux
