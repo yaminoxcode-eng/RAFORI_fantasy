@@ -1503,10 +1503,40 @@ function buildHumanoid(c={}){
   // Pas de frange, pas de mèches latérales, pas de volume devant.
   const hairCap=ell(head,hair,[0,.250,.060],[.145,.080,.100],12);hairCap.name='hair_cap';
   const hairBack=ell(head,hair,[0,.100,.120],[.130,.120,.070],12);hairBack.name='hair_back';
-  // Petites mèches AU SOMMET uniquement (vers l'arrière)
-  for(const side of [-1,1]){
-    const topLock=add(head,new THREE.ConeGeometry(.030,.08,5),hair,side*.06,.310,.050,'hair_top');
-    topLock.rotation.x=.35;
+  // Coiffures différenciées pour les habitants : la tête du héros garde sa coupe sobre.
+  const hairStyle=c.hairStyle||'hero';
+  if(hairStyle==='long'){
+    ell(head,hair,[-.132,.025,.095],[.055,.205,.075],12);
+    ell(head,hair,[.132,.025,.095],[.055,.205,.075],12);
+    ell(head,hair,[0,-.075,.125],[.125,.12,.065],12);
+  }else if(hairStyle==='bun'){
+    ell(head,hair,[0,.235,.115],[.075,.075,.075],12);
+    ell(head,hair,[0,.12,.135],[.13,.12,.065],12);
+  }else if(hairStyle==='hood'){
+    ell(head,cloth2,[0,.105,.075],[.178,.225,.145],14);
+    ell(head,cloth2,[0,.245,.035],[.155,.085,.12],14);
+  }else if(hairStyle==='braid'){
+    ell(head,hair,[0,.12,.13],[.13,.12,.07],12);
+    for(let j=0;j<4;j++)ell(head,hair,[.145,.01-j*.075,.10],[.035,.055,.04],8);
+  }else{
+    for(const side of [-1,1]){
+      const topLock=add(head,new THREE.ConeGeometry(.030,.08,5),hair,side*.06,.310,.050,'hair_top');
+      topLock.rotation.x=.35;
+      ell(head,hair,[side*.132,.085,.045],[.035,.105,.075],10);
+    }
+  }
+  if(c.npcRole==='fermier'||c.npcRole==='artisane'){
+    const apron=box(body,leather,[0,1.02,-.238],[.20,.31,.025]);
+    apron.name='work_apron';
+    box(body,gold,[0,.88,-.257],[.12,.012,.008]);
+  }
+  if(c.npcRole==='chasseur'){
+    const scarf=add(body,new THREE.TorusGeometry(.105,.025,6,14),clothLight,0,1.64,0,'hunter_scarf');
+    scarf.rotation.x=Math.PI/2;
+  }
+  if(c.npcRole==='berger'){
+    add(head,new THREE.CylinderGeometry(.19,.16,.045,12),leather,0,.205,.02,'shepherd_hat_brim');
+    add(head,new THREE.ConeGeometry(.12,.15,10),leather,0,.29,.02,'shepherd_hat_crown');
   }
   // Barbe uniquement si demandée (sinon rien autour du visage)
   if(c.beard&&c.beard!=='none'){
@@ -5577,11 +5607,19 @@ window.addEventListener("load",()=>{
         const ang = Math.random()*6.28, rr = 2+Math.random()*Math.max(3,(v.radius||10)*0.45);
         const x=v.x+Math.cos(ang)*rr, z=v.z+Math.sin(ang)*rr;
         try{
-          const h = buildHumanoid({skin:0xc99a70,shirt:0x6a8a4a,pants:0x4a3a2a,boot:0x2a1a12,hair:0x3a2a1a,belt:0x8a6a3a,eye:0x222222,people:"humain"});
+          const role = rolesV[i%rolesV.length];
+          const npcLooks = [
+            {skin:0xc99a70,shirt:0x6a8a4a,pants:0x4a3a2a,hair:0x3a2a1a,physique:'normal',hairStyle:'short',faceShape:'ovale'},
+            {skin:0x8b573b,shirt:0x8a6545,pants:0x303b4a,hair:0x211812,physique:'robuste',hairStyle:'long',faceShape:'carre',beard:'full'},
+            {skin:0xe0b58e,shirt:0x7a526c,pants:0x493b50,hair:0x9a6b3d,physique:'fin',hairStyle:'bun',faceShape:'fin'},
+            {skin:0xb97850,shirt:0x496c7a,pants:0x3c3a32,hair:0x241b17,physique:'normal',hairStyle:'braid',faceShape:'ovale'},
+            {skin:0xdeb58c,shirt:0x8b7747,pants:0x514333,hair:0x6b4227,physique:'robuste',hairStyle:'hood',faceShape:'carre'}
+          ];
+          const look = npcLooks[(i+Math.abs(v.x|0))%npcLooks.length];
+          const h = buildHumanoid({...look,boot:0x2a1a12,belt:0x8a6a3a,eye:0x222222,people:"humain",npcRole:role});
           h.group.position.set(x,heightAt(x,z),z);
           this.scene.add(h.group);
           const nm = namesV[(i+Math.abs(v.x|0))%namesV.length];
-          const role = rolesV[i%rolesV.length];
           const isQuest = i===0;
           const npc = {
             name: nm,
