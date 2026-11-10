@@ -1348,7 +1348,8 @@ function buildHumanoid(c={}){
   // RAFORI V6 — visage orienté vers -Z ; les caméras d’aperçu sont placées devant le personnage.
   // Style low-poly flat-shaded, palette unie, modules géométriques sans textures complexes.
   // Contrat de compatibilité : group/body/head/cape, articulations, matériaux et fourreau conservés.
-  const M=(color,opts={})=>new THREE.MeshStandardMaterial({color,roughness:.78,flatShading:true,...opts});
+  // Le héros utilise des normales lissées : les facettes restent réservées aux créatures qui en ont besoin.
+  const M=(color,opts={})=>new THREE.MeshStandardMaterial({color,roughness:.78,flatShading:false,...opts});
   const skin=M(c.skin||0xc99a70),shirt=M(c.shirt||0x315d83),pants=M(c.pants||0x49372d);
   const boot=M(c.boot||0x34271f),hair=M(c.hair||0x38271e),eye=M(c.eye||0x24160f);
   const leather=M(c.belt||0x654126),leatherDark=M(0x2b1b16),gold=M(c.trim||0xc99a42,{metalness:.38,roughness:.48});
@@ -1519,10 +1520,19 @@ function buildHumanoid(c={}){
     ell(head,hair,[0,.12,.13],[.13,.12,.07],12);
     for(let j=0;j<4;j++)ell(head,hair,[.145,.01-j*.075,.10],[.035,.055,.04],8);
   }else{
+    // Volume latéral et mèches frontales : le visage reste dégagé, mais le crâne ne paraît plus nu.
     for(const side of [-1,1]){
-      const topLock=add(head,new THREE.ConeGeometry(.030,.08,5),hair,side*.06,.310,.050,'hair_top');
-      topLock.rotation.x=.35;
-      ell(head,hair,[side*.132,.085,.045],[.035,.105,.075],10);
+      const topLock=add(head,new THREE.ConeGeometry(.030,.075,7),hair,side*.065,.305,.025,'hair_top');
+      topLock.rotation.x=.28;topLock.rotation.z=-side*.18;
+      ell(head,hair,[side*.132,.085,.045],[.035,.105,.075],12);
+    }
+    const fringeL=ell(head,hair,[-.052,.198,-.086],[.060,.066,.040],14);
+    fringeL.rotation.z=-.24;fringeL.rotation.y=-.10;
+    const fringeR=ell(head,hair,[.040,.211,-.090],[.052,.058,.040],14);
+    fringeR.rotation.z=.18;fringeR.rotation.y=.12;
+    if(hairStyle!=='short'){
+      const fringeCenter=ell(head,hair,[-.005,.238,-.066],[.050,.045,.043],12);
+      fringeCenter.rotation.z=-.12;
     }
   }
   if(c.npcRole==='fermier'||c.npcRole==='artisane'){
