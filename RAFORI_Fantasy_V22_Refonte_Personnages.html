@@ -9114,9 +9114,18 @@ window.addEventListener("load",()=>{
           name: isCity ? ("Citadin " + (i+1)) : ("Villageois " + (i+1)),
           type: isCity ? "citizen" : "villager",
           mesh: mesh, x: x, z: z,
-          dialog: isCity
-            ? "Les marches sont animés aujourd'hui."
-            : "Les champs demandent du travail, mais on tient."
+          // V29 — dialogues courts selon le métier, pour rendre les habitants plus utiles et distincts.
+          dialog: (function(){
+            var lines={
+              fermier:"La récolte dépend du temps. Les champs au nord donnent de bons légumes.",
+              artisane:"Je répare les outils et les armures. Apporte-moi des matériaux de qualité.",
+              chasseur:"Les bêtes sauvages rôdent près des bois. Garde ton arme prête.",
+              berger:"Mes animaux connaissent les sentiers. Évite de les effrayer."
+            };
+            return isCity
+              ? (mesh.userData.rafNpcRole==="artisane"?"Les ateliers de la cité restent ouverts aux aventuriers.":"La cité est calme aujourd'hui. Reste prudent hors des remparts.")
+              : (lines[mesh.userData.rafNpcRole]||"Bienvenue au village, aventurier.");
+          })()
         };
         game.npcs = game.npcs || [];
         game.npcs.push(npc);
