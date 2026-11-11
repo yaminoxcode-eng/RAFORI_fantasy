@@ -1372,7 +1372,7 @@ function buildHumanoid(c={}){
   const leather=M(c.belt||outfit.belt),leatherDark=M(0x2b1b16),gold=M(c.trim||0xc99a42,{metalness:.38,roughness:.48});
   const steel=M(c.armor||0x718493,{metalness:.38,roughness:.48}),steelDark=M(0x344652,{metalness:.42,roughness:.52});
   const cloth2=M(c.secondary||outfit.secondary),clothLight=M(0xb4a18a),ivory=M(0xf1e8dc),iris=M(c.iris||0x80542f),lip=M(0x985b52);
-  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V25_CLOTHING_DETAIL';
+  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V26_ANIMATION_REFINEMENT';
   const body=new THREE.Group();body.name='characterRig';group.add(body);
   const add=(parent,geo,mat,x=0,y=0,z=0,name='')=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.name=name;o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;};
   const ell=(parent,mat,pos,scale,seg=14)=>{const o=add(parent,new THREE.SphereGeometry(1,seg,Math.max(8,Math.round(seg*.7))),mat,...pos);o.scale.set(...scale);return o;};
@@ -1649,7 +1649,7 @@ function buildHumanoid(c={}){
   const sheath=null;
 
   body.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=25;group.userData.outfitStyle=c.outfitStyle||'aventurier';
+  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=26;group.userData.outfitStyle=c.outfitStyle||'aventurier';
   return{group,body,torso:body,head,cape,add,M,mats:{skin,shirt,pants,boot},aL,aR,lL,lR,sheathGroup,sheath};
 }
 function animateHumanoid(h,phase,amp,t,running=false){
@@ -1665,10 +1665,21 @@ function animateHumanoid(h,phase,amp,t,running=false){
   h.aL.top.rotation.z=-0.035*a;h.aR.top.rotation.z=0.035*a;
   h.aL.low.rotation.x=0.08+(running?0.28:0.14)*a+Math.max(0,gait)*0.12*a;
   h.aR.low.rotation.x=0.08+(running?0.28:0.14)*a+Math.max(0,opposite)*0.12*a;
-  h.body.position.y=Math.abs(gait)*(running?0.052:0.025)*a+Math.sin(t*(running?8:2.2))* (running?0.012:0.008);
-  h.body.rotation.x=running?-0.025*a:0;
-  h.body.rotation.z=0;
-  if(h.head){h.head.rotation.y=Math.sin(t*1.1)*0.025;h.head.rotation.z=0;}
+  // V26 — cycle de marche plus vivant : transfert du poids, rotation du bassin et contre-mouvement du buste.
+  const cadence=running?9.5:5.8;
+  const weightShift=Math.sin(phase);
+  h.body.position.y=Math.abs(gait)*(running?0.050:0.022)*a+Math.sin(t*cadence)*(running?0.010:0.006);
+  h.body.rotation.x=(running?-0.040:0.012)*a+Math.sin(phase*2)*0.012*a;
+  h.body.rotation.y=weightShift*0.018*a;
+  h.body.rotation.z=Math.sin(phase)*0.018*a;
+  if(h.head){
+    // La tête compense le mouvement du torse et garde le regard stable.
+    h.head.rotation.y=Math.sin(t*0.72)*0.018-weightShift*0.012*a;
+    h.head.rotation.x=Math.sin(t*cadence+0.6)*(running?0.018:0.008)*a;
+    h.head.rotation.z=-h.body.rotation.z*0.55;
+  }
+  // Micro-mouvement des mains : réduit l'effet de bras rigides pendant la course.
+  h.aL.low.rotation.z=-0.025*a;h.aR.low.rotation.z=0.025*a;
   if(h.cape){h.cape.visible=false;}
 }
 
