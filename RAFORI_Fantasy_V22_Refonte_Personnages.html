@@ -4502,7 +4502,7 @@ class Game{
     for(const d of this.dungeons||[])add(d.name||"Donjon",`Donjon · niveau requis ${d.levelReq||1}.`,d.x,d.z,"Donjon");
     for(const c of this.caves||[])add(c.name||"Grotte","Grotte explorable pouvant contenir des monstres et des ressources.",c.x,c.z,"Grotte");
     if(this.townHall)add(this.townHall.name,"Bâtiment majeur de la région; une entrée mène à l'intérieur.",this.townHall.x,this.townHall.z,"Structure");
-    candidates.sort((a,b)=>a.d-b.d);const obj=candidates[0];if(!obj){r.toast("Aucun objet ou être à analyser à moins de 5 mètres.");return;}
+    candidates.sort((a,b)=>a.d-b.d);const obj=candidates[0];if(!obj){r.toast("Aucun objet ou être à analyser à moins de 5 mètres.");return false;}
     const level=r.analysis.level||1;
     const isEnemy=(this.enemies||[]).some(e=>e.mesh&&Math.hypot(e.mesh.position.x-obj.x,e.mesh.position.z-obj.z)<0.15);
     const hpText=level<=5?"???":(isEnemy?`${Math.max(0,Math.round((this.enemies.find(e=>e.mesh&&Math.hypot(e.mesh.position.x-obj.x,e.mesh.position.z-obj.z)<0.15)||{}).hp||0))} PV`:"Non applicable");
@@ -4514,6 +4514,8 @@ class Game{
     panel.style.display="block";clearTimeout(this._rafAnalysisTimer);this._rafAnalysisTimer=setTimeout(()=>{panel.style.display="none";},4200);
     r.toast(`🔍 Analyse : ${obj.name}`);r.updateQuest("analysis",1);
     r.recordAction("analysis");r.refresh();
+    if(r.analysis){r.analysis.used=true;r.analysis.count=(r.analysis.count||0)+1;}
+    return true;
   }
   upgradeAnalysis(){if(this.rpg&&typeof this.rpg.upgradeAnalysis==="function")return this.rpg.upgradeAnalysis();}
   nearest(){
@@ -16988,13 +16990,13 @@ body.intro-active #rafMobileActions,body.intro-active #rafMobileTopBtns,body.int
         game._rafTutoJump = true;
         const prev = game.step.bind(game);
         game.step = function (dt) {
+          const wasGrounded = !!(this.player && this.player.onGround);
           const res = prev(dt);
           try {
-            if (this.player && this.player.jumpT > 0.05) {
-              Tutorial._done("jump");
-            }
+            const pl = this.player;
+            if (pl && wasGrounded && !pl.onGround && pl.vel && pl.vel.y > 0.1) Tutorial._done("jump");
             if (this.input && this.input.has && this.input.has("ShiftLeft","ShiftRight")) {
-              const sp = Math.hypot(this.player?.vel?.x||0, this.player?.vel?.z||0);
+              const sp = Math.hypot(pl?.vel?.x||0, pl?.vel?.z||0);
               if (sp > 6) Tutorial._done("run");
             }
           } catch (_) {}
@@ -17002,17 +17004,17 @@ body.intro-active #rafMobileActions,body.intro-active #rafMobileTopBtns,body.int
         };
       }
 
-      const r = RPG();
-      if (r && !r._rafTutoAnalyze) {
-        r._rafTutoAnalyze = true;
-        const check = () => {
-          if (r.analysis && (r.analysis.used || r.analysis.count > 0)) {
-            Tutorial._done("analyze");
-          }
+      if (typeof game.analyzeNearby === "function" && !game._rafTutoAnalyze) {
+        game._rafTutoAnalyze = true;
+        const prevAnalyze = game.analyzeNearby.bind(game);
+        game.analyzeNearby = function (...args) {
+          const result = prevAnalyze(...args);
+          if (result === true) Tutorial._done("analyze");
+          return result;
         };
-        setInterval(check, 800);
       }
 
+      const r = RPG();
       if (r && typeof r.craftFrom === "function" && !r._rafTutoCraft) {
         r._rafTutoCraft = true;
         const prevCraft = r.craftFrom.bind(r);
