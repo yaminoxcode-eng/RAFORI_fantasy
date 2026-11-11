@@ -1372,7 +1372,7 @@ function buildHumanoid(c={}){
   const leather=M(c.belt||outfit.belt),leatherDark=M(0x2b1b16),gold=M(c.trim||0xc99a42,{metalness:.38,roughness:.48});
   const steel=M(c.armor||0x718493,{metalness:.38,roughness:.48}),steelDark=M(0x344652,{metalness:.42,roughness:.52});
   const cloth2=M(c.secondary||outfit.secondary),clothLight=M(0xb4a18a),ivory=M(0xf1e8dc),iris=M(c.iris||0x80542f),lip=M(0x985b52);
-  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V24_HAIR_REFINEMENT';
+  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V25_CLOTHING_DETAIL';
   const body=new THREE.Group();body.name='characterRig';group.add(body);
   const add=(parent,geo,mat,x=0,y=0,z=0,name='')=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.name=name;o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;};
   const ell=(parent,mat,pos,scale,seg=14)=>{const o=add(parent,new THREE.SphereGeometry(1,seg,Math.max(8,Math.round(seg*.7))),mat,...pos);o.scale.set(...scale);return o;};
@@ -1616,6 +1616,32 @@ function buildHumanoid(c={}){
   }
   if(c.people==='semi')for(const side of [-1,1]){const ear=add(head,new THREE.ConeGeometry(.028,.09,7),skin,side*.145,.210,.010);ear.rotation.z=-side*.2;}
 
+  // V25 — finitions de tenue : surpiqûres, renforts, attaches et couches de tissu.
+  const stitch=M(0xd8bd8a,{roughness:.92});
+  for(const side of [-1,1]){
+    // Coutures verticales de la tunique, placées sur l'avant du volume.
+    for(let j=0;j<3;j++){
+      const seam=add(body,new THREE.CylinderGeometry(.0035,.0035,.19,5),stitch,side*(.115+j*.012),1.075,-.185+j*.002,'tunic_stitch');
+      seam.rotation.z=side*.04;
+    }
+    // Renforts de bottes et attaches des avant-bras.
+    const bootStrap=add(body,new THREE.TorusGeometry(.086,.009,5,12),leather,side*.12,.245,0,'boot_strap');
+    bootStrap.rotation.x=Math.PI/2;
+    const bracerRivet=ell(aL===null?body:body,gold,[side*.30,1.36,-.11],[.012,.012,.008],7);bracerRivet.name='armor_rivet';
+    const shoulderMark=ell(body,gold,[side*.292,1.555,-.015],[.012,.018,.009],8);shoulderMark.name='shoulder_rivet';
+  }
+  // Panneau de ceinture et boucles latérales, sans épaissir la silhouette.
+  for(const side of [-1,1]){
+    const loop=add(body,new THREE.TorusGeometry(.027,.006,5,10),gold,side*.145,1.04,-.105,'belt_loop');
+    loop.rotation.x=Math.PI/2;
+    box(body,leatherDark,[side*.16,1.035,-.158],[.025,.075,.014]);
+  }
+  const chestSeam=add(body,new THREE.TorusGeometry(.105,.004,5,18),gold,0,1.47,-.168,'breastplate_edge');
+  chestSeam.scale.set(1.18,1.0,.30);
+  // Petit rabat textile à l'arrière : détail visuel, aucune collision ni changement de gameplay.
+  const rearFlap=add(body,new THREE.BoxGeometry(.19,.20,.025),cloth2,0,1.00,.155,'rear_tunic_flap');
+  rearFlap.rotation.x=-.08;
+
   // === PAS DE CAPE / MANTEAU / FERMOIR / FOURREAU AU DOS ===
   // (compatibilité API : cape = groupe vide invisible)
   const cape=new THREE.Group();cape.name='cape_rig';cape.visible=false;body.add(cape);
@@ -1623,7 +1649,7 @@ function buildHumanoid(c={}){
   const sheath=null;
 
   body.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=24;group.userData.outfitStyle=c.outfitStyle||'aventurier';
+  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=25;group.userData.outfitStyle=c.outfitStyle||'aventurier';
   return{group,body,torso:body,head,cape,add,M,mats:{skin,shirt,pants,boot},aL,aR,lL,lR,sheathGroup,sheath};
 }
 function animateHumanoid(h,phase,amp,t,running=false){
