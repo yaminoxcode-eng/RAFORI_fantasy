@@ -1352,7 +1352,7 @@ function buildHumanoidLegacy(c){
 /* RAFORI — Refonte Polygon Fantasy procédurale (V6 — visage visible)
    Couche additive : conserve les points d'accès et articulations du modèle historique. */
 function buildHumanoid(c={}){
-  // V14 : refonte procédurale du héros, coiffure dégagée et cape repoussée derrière le dos.
+  // V24 : raffinement des coiffures et du profil capillaire, en conservant le rig V23.
   // RAFORI V6 — visage orienté vers -Z ; les caméras d’aperçu sont placées devant le personnage.
   // Style low-poly flat-shaded, palette unie, modules géométriques sans textures complexes.
   // Contrat de compatibilité : group/body/head/cape, articulations, matériaux et fourreau conservés.
@@ -1372,7 +1372,7 @@ function buildHumanoid(c={}){
   const leather=M(c.belt||outfit.belt),leatherDark=M(0x2b1b16),gold=M(c.trim||0xc99a42,{metalness:.38,roughness:.48});
   const steel=M(c.armor||0x718493,{metalness:.38,roughness:.48}),steelDark=M(0x344652,{metalness:.42,roughness:.52});
   const cloth2=M(c.secondary||outfit.secondary),clothLight=M(0xb4a18a),ivory=M(0xf1e8dc),iris=M(c.iris||0x80542f),lip=M(0x985b52);
-  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V23_HUMAN_REFINEMENT';
+  const group=new THREE.Group();group.name='RAFORI_CHARACTER_V24_HAIR_REFINEMENT';
   const body=new THREE.Group();body.name='characterRig';group.add(body);
   const add=(parent,geo,mat,x=0,y=0,z=0,name='')=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.name=name;o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;};
   const ell=(parent,mat,pos,scale,seg=14)=>{const o=add(parent,new THREE.SphereGeometry(1,seg,Math.max(8,Math.round(seg*.7))),mat,...pos);o.scale.set(...scale);return o;};
@@ -1564,6 +1564,33 @@ function buildHumanoid(c={}){
       fringeCenter.rotation.z=-.12;
     }
   }
+  // V24 — coiffures plus travaillées : volumes arrière, mèches séparées et attaches lisibles.
+  // Toutes les pièces restent enfant de head : elles suivent les rotations et le zoom du visage.
+  if(hairStyle==='ponytail'){
+    const tie=add(head,new THREE.TorusGeometry(.035,.009,6,12),gold,0,.205,.125,'ponytail_tie');tie.rotation.x=Math.PI/2;
+    const tail=ell(head,hair,[0,.015,.205],[.055,.19,.065],12);tail.rotation.x=-.28;tail.name='ponytail_tail';
+    for(let j=0;j<3;j++){const lock=ell(head,hair,[0,-.055-j*.065,.235],[.035,.065,.043],9);lock.name='ponytail_lock_'+j;}
+    for(const side of [-1,1]){const temple=ell(head,hair,[side*.126,.055,-.005],[.024,.075,.035],10);temple.name='temple_lock';}
+  }else if(hairStyle==='wavy'){
+    for(const side of [-1,1]){
+      for(let j=0;j<3;j++){const wave=ell(head,hair,[side*(.128+j*.008),.09-j*.065,.075+j*.012],[.035,.073,.052],10);wave.rotation.z=side*.16;wave.name='wavy_side_lock';}
+    }
+    for(let j=0;j<3;j++){const wave=ell(head,hair,[-.065+j*.065,.218+Math.sin(j)*.012,-.080],[.041,.045,.037],10);wave.rotation.z=(j-1)*-.20;wave.name='wavy_fringe';}
+    ell(head,hair,[0,.255,.045],[.132,.055,.095],14).name='wavy_crown';
+  }else if(hairStyle==='undercut'){
+    ell(head,hair,[0,.252,.035],[.137,.063,.092],14).name='undercut_top';
+    for(const side of [-1,1]){
+      ell(head,hair,[side*.132,.085,.025],[.025,.070,.065],10).name='undercut_side';
+      const swept=add(head,new THREE.ConeGeometry(.043,.12,8),hair,side*-.035,.295,.005,'undercut_swept_lock');swept.rotation.z=side*.55;swept.rotation.x=.25;
+    }
+    ell(head,hair,[-.040,.195,-.083],[.045,.040,.032],12).name='undercut_front_lock';
+  }else if(hairStyle==='braids'){
+    ell(head,hair,[0,.255,.035],[.135,.060,.090],12).name='braid_crown';
+    for(const side of [-1,1]){
+      for(let j=0;j<5;j++){const bead=ell(head,hair,[side*(.132+j*.008),.045-j*.060,.085+j*.018],[.030,.042,.035],9);bead.name='braid_segment';}
+      const band=add(head,new THREE.TorusGeometry(.026,.008,5,10),gold,side*.153,-.205,.13,'braid_end_band');band.rotation.x=Math.PI/2;
+    }
+  }
   if(c.npcRole==='fermier'||c.npcRole==='artisane'){
     const apron=box(body,leather,[0,1.02,-.238],[.20,.31,.025]);
     apron.name='work_apron';
@@ -1596,7 +1623,7 @@ function buildHumanoid(c={}){
   const sheath=null;
 
   body.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=23;group.userData.outfitStyle=c.outfitStyle||'aventurier';
+  group.userData.rafProceduralPolygonFantasy=true;group.userData.rafCharacterVersion=24;group.userData.outfitStyle=c.outfitStyle||'aventurier';
   return{group,body,torso:body,head,cape,add,M,mats:{skin,shirt,pants,boot},aL,aR,lL,lR,sheathGroup,sheath};
 }
 function animateHumanoid(h,phase,amp,t,running=false){
