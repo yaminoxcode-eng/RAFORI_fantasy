@@ -713,10 +713,10 @@ const ROOFS=[0x9c4a32,0x8a3f2c,0x6b4b3a,0x7a5a3a,0x5f6a5a];
 function villageInRegion(rx,rz){
   const k=rx*100003+rz;if(vCache.has(k))return vCache.get(k);
   const r=mulberry32(Math.floor(hash2(rx,rz,99)*4294967296)),pick=a=>a[Math.floor(r()*a.length)];let v=null;
-  if(r()<0.85){const x=(rx+0.25+r()*0.5)*REGION,z=(rz+0.25+r()*0.5)*REGION,y=rawH(x,z);
+  if(r()<0.38){const x=(rx+0.25+r()*0.5)*REGION,z=(rz+0.25+r()*0.5)*REGION,y=rawH(x,z);
     const isCity=r()>0.55,isCastle=r()>0.92;
     if(y>CONFIG.waterLevel+1.5&&y<8&&Math.hypot(x,z)>60){
-      const peopleKey=pick(["humain","elfe","nain","semi"]);
+      const terr=territoryAt(x,z);const peopleKey=terr?terr.race:pick(["humain","elfe","nain","semi"]);
       v={x,z,y,city:isCity,castle:isCastle,radius:isCastle?55:(isCity?45:25),name:pick(NAMES),people:peopleKey,houses:[],guild:null,castlePos:null};
       if(isCastle)v.castlePos={x:x+v.radius*0.6,y,z:z+v.radius*0.6};
       const md=v.city?18:12;
@@ -7571,7 +7571,7 @@ window.addEventListener("load",()=>{
       }catch(_){ return; }
       if(ac.state==="suspended") ac.resume();
       fantasyStarted=true;
-      const master=ac.createGain(); master.gain.value=0.07; master.connect(ac.destination);
+      const master=ac.createGain(); master.gain.value=0.11; master.connect(ac.destination);
 
       // Pad doux (accords mineurs fantasy)
       function pad(freq, type, gainVal){
@@ -12643,5 +12643,82 @@ window.addEventListener("load",()=>{
 })();
 </script>
 
+<script>
+/* RAFORI V32.3 — routes continues, objectifs et cibles de quête */
+(function(){
+"use strict";
+if(window.__RAFORI_V323__)return;window.__RAFORI_V323__=true;
+const css=document.createElement("style");
+css.textContent="#rafObjective{position:fixed;z-index:32;top:12px;left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));padding:10px 16px;border:1px solid rgba(232,199,120,.8);border-radius:12px;background:linear-gradient(180deg,rgba(13,26,35,.94),rgba(6,13,21,.92));box-shadow:0 8px 26px #0008;color:#fff3d0;pointer-events:none;text-align:center;backdrop-filter:blur(7px);font:600 12px/1.4 system-ui}#rafObjective strong{display:block;color:#f1d18a;font:800 13px/1.35 Georgia,serif}#rafObjective small{display:block;color:#b8c9c7;font-size:11px;margin-top:2px}#rafObjective .rafArrow{font-size:20px;color:#f4c75e;display:inline-block;line-height:1}@media(max-width:600px){#rafObjective{top:7px;padding:7px 10px;width:min(340px,calc(100vw - 16px))}}";
+document.head.appendChild(css);
+const box=document.createElement("div");box.id="rafObjective";box.innerHTML="<strong>Explore l’Horizon</strong><small>Préparation de l’aventure…</small>";document.body.appendChild(box);
+function dist(a,b){return Math.hypot((a.x||0)-(b.x||0),(a.z||0)-(b.z||0));}
+function nearest(list,p,ok){let best=null,bd=Infinity;(list||[]).forEach(o=>{if(!o||ok&&!ok(o))return;const m=o.mesh||o.group;if(!m||!m.position)return;const d=dist(m.position,p);if(d<bd){bd=d;best={obj:o,mesh:m,d};}});return best;}
+function active(r){return(r&&r.quests||[]).find(q=>!q.done)||null;}
+function update(){
+ const g=window.__game;if(!g||!g.player||!g.player.position){box.style.display="none";return;}box.style.display="";
+ const p=g.player.position,q=active(g.rpg);let target=null;
+ if(q&&q.id==="side_bandits")target=nearest(g.bandits,p,e=>e.hp>0);
+ else if(q&&q.id==="side_wildlife")target=nearest(g.wildlife,p,a=>a.hp>0);
+ else if(q&&q.type==="kill")target=nearest(g.enemies,p,e=>e.hp>0);
+ else if(!q)target=nearest(g.enemies,p,e=>e.hp>0);
+ if(q&&q.progress>=q.target){box.innerHTML="<strong>✓ "+q.title+"</strong><small>Objectif accompli — retourne auprès du donneur de mission</small>";return;}
+ if(target){
+  const pos=target.mesh.position,d=Math.round(dist(pos,p)),yaw=g.cam&&Number.isFinite(g.cam.yaw)?g.cam.yaw:0,rel=Math.atan2(pos.x-p.x,pos.z-p.z)-yaw;
+  g.waypoint={x:pos.x,z:pos.z};
+  const title=q?q.title:"Cible hostile la plus proche",progress=q?" · "+(q.progress||0)+"/"+q.target:"";
+  const label=q&&q.id==="side_bandits"?"Trouver les bandits sur la route":q&&q.id==="side_wildlife"?"Trouver un animal sauvage":"Suivre la direction indiquée";
+  box.innerHTML='<span class="rafArrow" style="transform:rotate('+rel+'rad)">➤</span><strong>'+title+progress+'</strong><small>'+label+' · '+d+' m</small>';
+ }else if(q)box.innerHTML="<strong>"+q.title+" · "+(q.progress||0)+"/"+q.target+"</strong><small>Étape suivante : explore la région pour trouver la cible</small>";
+ else box.innerHTML="<strong>Explore l’Horizon</strong><small>Aucune mission active · approche un PNJ pour obtenir un contrat</small>";
+}
+function tick(){try{update();}catch(e){console.warn("[RAFORI V32.3 objective]",e);}setTimeout(tick,450);}tick();
+
+/* Les bandits et les animaux ont chacun leur compteur dédié. */
+if(typeof RPG!=="undefined"&&RPG.prototype){
+ const prev=RPG.prototype.updateQuest;
+ RPG.prototype.updateQuest=function(type,amount=1){
+  for(const q of this.quests||[]){
+   if(q.done||q.type!==type)continue;
+   if(q.id==="side_bandits"&&(!this._rafBanditKillSignal||this._rafBanditKillCounted))continue;
+   if(q.id==="side_wildlife"&&(!this._rafAnimalKillSignal||this._rafAnimalKillCounted))continue;
+   if(q.id==="side_bandits")this._rafBanditKillCounted=true;
+   if(q.id==="side_wildlife")this._rafAnimalKillCounted=true;
+  }
+  return prev.call(this,type,amount);
+ };
+}
+if(typeof Game!=="undefined"&&Game.prototype){
+ const prevEnemy=Game.prototype.onEnemyKilled;
+ Game.prototype.onEnemyKilled=function(e){const r=this.rpg;if(r&&e&&e.bandit){r._rafBanditKillSignal=true;r._rafBanditKillCounted=false;}try{return prevEnemy.call(this,e);}finally{if(r){r._rafBanditKillSignal=false;r._rafBanditKillCounted=false;}}};
+ const prevAnimal=Game.prototype.onAnimalKilled;
+ Game.prototype.onAnimalKilled=function(a){const r=this.rpg;if(r){r._rafAnimalKillSignal=true;r._rafAnimalKillCounted=false;}try{return prevAnimal.call(this,a);}finally{if(r){r._rafAnimalKillSignal=false;r._rafAnimalKillCounted=false;}}};
+}
+
+/* Rubans de route continus entre les capitales, ajustés au relief. */
+function addRoad(g,a,b,idx){
+ const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1,bend=(idx%2?1:-1)*Math.min(150,len*.1);
+ const cx=(a.x+b.x)/2-(dz/len)*bend,cz=(a.z+b.z)/2+(dx/len)*bend;
+ const n=Math.max(28,Math.ceil(len/24)),half=3.1,verts=[],uv=[],ids=[];
+ for(let i=0;i<=n;i++){
+  const t=i/n,u=1-t,x=u*u*a.x+2*u*t*cx+t*t*b.x,z=u*u*a.z+2*u*t*cz+t*t*b.z;
+  const tx=2*u*(cx-a.x)+2*t*(b.x-cx),tz=2*u*(cz-a.z)+2*t*(b.z-cz),tl=Math.hypot(tx,tz)||1,nx=-tz/tl,nz=tx/tl;
+  const y=(typeof heightAt==="function"?heightAt(x,z):0)+.10;
+  verts.push(x+nx*half,y,z+nz*half,x-nx*half,y,z-nz*half);uv.push(0,t*len/8,1,t*len/8);
+  if(i<n){const k=i*2;ids.push(k,k+1,k+2,k+1,k+3,k+2);}
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(verts,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));geo.setIndex(ids);geo.computeVertexNormals();
+ const mat=new THREE.MeshStandardMaterial({color:0x8d7958,roughness:1,side:THREE.DoubleSide});
+ const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=true;mesh.userData.rafRoadV323=true;g.scene.add(mesh);
+}
+function buildRoads(g){if(!g||g._rafV323RoadsBuilt)return;g._rafV323RoadsBuilt=true;const caps=Object.values(CAPITALS);let k=0;for(let i=0;i<caps.length;i++)for(let j=i+1;j<caps.length;j++)try{addRoad(g,caps[i],caps[j],k++);}catch(e){console.warn("[RAFORI V32.3 road]",e);}}
+if(typeof Game!=="undefined"&&Game.prototype&&typeof Game.prototype.rafSpawnSettlementLife==="function"){
+ const old=Game.prototype.rafSpawnSettlementLife;Game.prototype.rafSpawnSettlementLife=function(){const r=old.apply(this,arguments);buildRoads(this);return r;};
+}
+window.addEventListener("pointerdown",function(){try{if(typeof AudioEngine!=="undefined")AudioEngine.resume();}catch(_){}},{once:true,passive:true});
+window.addEventListener("keydown",function(){try{if(typeof AudioEngine!=="undefined")AudioEngine.resume();}catch(_){}},{once:true,passive:true});
+console.info("[RAFORI V32.3] routes continues et guidage des quêtes chargés");
+})();
+</script>
 </body>
 </html>
