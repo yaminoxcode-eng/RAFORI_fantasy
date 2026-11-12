@@ -486,6 +486,7 @@ body.menu-open #rafMobileTopBtns{display:none!important;}
         <h2 class="pro-title">Forge ton apparence</h2>
         <p class="pro-sub">Personnalise chaque détail avant de choisir ton peuple et ta classe.</p>
         <div class="pro-section"><h3>Nom du personnage</h3><input type="text" id="cName" class="pro-input" maxlength="16" value="Aventurier" placeholder="Ton nom..."></div>
+        <div class="pro-section"><h3>Genre du personnage</h3><div class="pro-choice-row" id="genderChoices"><button type="button" data-gender="masculin">Masculin</button><button type="button" data-gender="feminin">Féminin</button></div></div>
         <div class="pro-section"><h3>Couleur de peau</h3><div class="pro-swatches" id="palSkin"></div></div>
         <div class="pro-section"><h3>Couleur des yeux</h3><div class="pro-swatches" id="palEye"></div></div>
         <div class="pro-section"><h3>Cheveux</h3><div class="pro-swatches" id="palHair"></div></div>
@@ -668,7 +669,7 @@ const CONFIG={
   // ✅ Nouveau : 12 donjons par pays
   dungeonsPerNation:12
 };
-const PLAYER_PROFILE={name:"Aventurier",people:"humain",skin:0xe0ac84,eye:0x24160f,hair:0x3a2517,shirt:0x2f5d7c,pants:0x4a3b2c,boot:0x34271f,physique:"normal",faceShape:"ovale",bodyHeight:1,bodyWidth:1,armLength:1,legLength:1,classId:"guerrier"};
+const PLAYER_PROFILE={name:"Aventurier",gender:"masculin",people:"humain",skin:0xe0ac84,eye:0x24160f,hair:0x3a2517,shirt:0x2f5d7c,pants:0x4a3b2c,boot:0x34271f,physique:"normal",faceShape:"ovale",bodyHeight:1,bodyWidth:1,armLength:1,legLength:1,classId:"guerrier"};
 
 const PEOPLES={
   humain:{n:"Humain",i:"👤",desc:"Adaptables et polyvalents.",skin:0xe0ac84,hair:0x3a2517,shirt:0x2f5d7c,pants:0x4a3b2c,names:["Aldric","Bryn","Cael","Dara","Eryn","Fenn"],bonus:{def:1},trait:"+1 défense"},
@@ -986,13 +987,14 @@ function buildHumanoid(c){
   // Silhouette RPG fantasy plus aboutie : tunique, cuir, pièces d'armure,
   // cape, bottes, gants, cheveux en mèches et fourreau visible dans le dos.
   const M=(col,o={})=>new THREE.MeshStandardMaterial({color:col,roughness:0.76,flatShading:false,side:THREE.DoubleSide,...o});
+  const feminine=c.gender==="feminin";
   const skin=M(c.skin),shirt=M(c.shirt),pants=M(c.pants),boot=M(c.boot);
   const leather=M(c.belt||0x654126,{roughness:0.82}),gold=M(0xc99a42,{metalness:0.42,roughness:0.42});
   const darkLeather=M(0x39251b,{roughness:0.86}),metal=M(0x65717d,{metalness:0.62,roughness:0.34});
   const group=new THREE.Group(),body=new THREE.Group();group.add(body);
   const add=(p,geo,mat,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;p.add(m);return m;};
   // Torse et tunique : volumes superposés pour éviter l'aspect cylindrique.
-  const torso=add(body,new THREE.CylinderGeometry(0.235,0.285,0.48,10,1,false),shirt,0,1.36,0);torso.scale.z=0.76;
+  const torso=add(body,new THREE.CylinderGeometry(0.235,0.285,0.48,10,1,false),shirt,0,1.36,0);torso.scale.set(feminine?0.91:1,1,0.76);
   add(body,new THREE.SphereGeometry(0.235,12,9),shirt,0,1.48,0).scale.set(1.05,0.82,0.76);
   add(body,new THREE.CylinderGeometry(0.235,0.26,0.22,10),shirt,0,1.08,0).scale.z=0.78;
   // Pans de tunique au-dessus des hanches.
@@ -1007,13 +1009,31 @@ function buildHumanoid(c){
   add(body,new THREE.BoxGeometry(0.025,0.32,0.018),gold,0,1.38,-0.232);
   // Sangle diagonale et boucle de ceinture.
   const strap=add(body,new THREE.BoxGeometry(0.055,0.47,0.026),leather,-0.04,1.38,-0.237);strap.rotation.z=-0.42;
+  if(feminine){
+    // Silhouette féminine stylisée mais aventurière : taille marquée, hanches légèrement plus larges.
+    const waist=add(body,new THREE.CylinderGeometry(0.205,0.265,0.19,12),shirt,0,1.08,0);waist.scale.z=0.78;
+    const hipOverlay=add(body,new THREE.CylinderGeometry(0.29,0.31,0.18,12),pants,0,0.96,0);hipOverlay.scale.z=0.82;
+    const collar=add(body,new THREE.SphereGeometry(0.16,12,8),shirt,0,1.51,-0.015);collar.scale.set(1.05,0.42,0.72);
+  }
   add(body,new THREE.BoxGeometry(0.105,0.075,0.035),leather,0,0.99,-0.222);
   add(body,new THREE.BoxGeometry(0.055,0.045,0.018),gold,0,0.99,-0.245);
   add(body,new THREE.BoxGeometry(0.07,0.055,0.022),darkLeather,0.19,1.0,-0.16);
   // Cou et tête, avec oreilles, yeux, sourcils, nez et cheveux en mèches.
   add(body,new THREE.CylinderGeometry(0.075,0.085,0.13,10),skin,0,1.68,0);
-  const head=add(body,new THREE.SphereGeometry(0.205,16,12),skin,0,1.86,-0.012);
-  const face=c.faceShape||"ovale";head.scale.set(face==="carre"?1.08:(face==="fin"?0.82:0.94),face==="rond"?1.0:(face==="fin"?1.16:1.08),0.94);
+  const head=add(body,new THREE.SphereGeometry(0.205,20,16),skin,0,1.86,-0.012);
+  const face=c.faceShape||"ovale";head.scale.set(face==="carre"?1.08:(face==="fin"?0.82:(feminine?0.88:0.94)),face==="rond"?1.0:(face==="fin"?1.16:(feminine?1.13:1.08)),0.94);
+  if(feminine){torso.scale.x=0.88;}
+  // Détails du visage : paupières, sourcils, narines et lèvres pour une expression moins plastique.
+  const faceDetail=M(0x75463b,{roughness:0.92}),lipLight=M(feminine?0x9b5d5a:0x87534a,{roughness:0.88});
+  const hairMatSafe=col=>M(col||0x2a1a10,{roughness:0.9});
+  add(body,new THREE.SphereGeometry(0.018,8,6),skin,0.014,1.824,-0.215);
+  add(body,new THREE.SphereGeometry(0.009,6,5),faceDetail,-0.018,1.829,-0.218);
+  add(body,new THREE.SphereGeometry(0.009,6,5),faceDetail,0.018,1.829,-0.218);
+  add(body,new THREE.BoxGeometry(0.052,0.009,0.009),lipLight,0,1.785,-0.205);
+  for(const sx of [-1,1]){
+    add(body,new THREE.BoxGeometry(0.075,0.012,0.018),hairMatSafe(c.hair),sx*0.073,1.918,-0.194).rotation.z=-sx*0.08;
+    add(body,new THREE.SphereGeometry(0.044,10,7),skin,sx*0.073,1.855,-0.191).scale.set(1,0.28,0.22);
+  }
   for(const sx of [-1,1]){
     add(body,new THREE.SphereGeometry(0.047,10,8),skin,sx*0.196,1.85,0).scale.set(0.48,0.9,0.65);
     add(body,new THREE.BoxGeometry(0.072,0.018,0.018),M(c.hair),sx*0.074,1.927,-0.183).rotation.z=-sx*0.1;
@@ -1024,6 +1044,15 @@ function buildHumanoid(c){
   add(body,new THREE.ConeGeometry(0.027,0.065,7),skin,0,1.842,-0.207).rotation.x=Math.PI/2;
   add(body,new THREE.BoxGeometry(0.055,0.012,0.01),M(0x75463b),0,1.79,-0.19);
   const hairMat=M(c.hair,{roughness:0.9});
+  if(feminine){
+    // Chevelure longue en mèches superposées, attachée à la tête et au dos.
+    const backHair=add(body,new THREE.SphereGeometry(0.205,14,10),hairMat,0,1.78,0.105);backHair.scale.set(0.96,1.18,0.72);
+    for(const sx of [-1,1]){
+      const sideLock=add(body,new THREE.CapsuleGeometry(0.038,0.34,4,8),hairMat,sx*0.175,1.62,0.075);sideLock.rotation.z=sx*0.07;
+      const rearLock=add(body,new THREE.CapsuleGeometry(0.045,0.43,4,8),hairMat,sx*0.115,1.38,0.19);rearLock.rotation.z=-sx*0.08;
+    }
+    add(body,new THREE.SphereGeometry(0.09,10,7),hairMat,0,2.015,0.015).scale.set(1.05,0.45,0.9);
+  }
   add(body,new THREE.SphereGeometry(0.218,12,9,0,Math.PI*2,0,Math.PI*0.61),hairMat,0,1.91,0.025).rotation.x=0.18;
   add(body,new THREE.SphereGeometry(0.205,12,8,0,Math.PI*2,0,Math.PI*0.38),hairMat,0,1.94,0.035).rotation.x=0.2;
   for(const sx of [-1,1]){
@@ -2324,7 +2353,7 @@ class RPG{
     const camera=new THREE.PerspectiveCamera(45,1,0.1,100);camera.position.set(0,1.8,3.8);camera.lookAt(0,1.3,0);
     scene.add(new THREE.HemisphereLight(0xcfe6ff,0x6b7a4a,0.65));
     const d=new THREE.DirectionalLight(0xffe8bf,0.9);d.position.set(2,4,2);scene.add(d);
-    const hum=buildHumanoid({skin:PLAYER_PROFILE.skin,shirt:PLAYER_PROFILE.shirt,pants:PLAYER_PROFILE.pants,boot:PLAYER_PROFILE.boot||0x2a1d14,hair:PLAYER_PROFILE.hair,belt:0x6b4a2b,eye:PLAYER_PROFILE.eye||0x1a1a1a,physique:PLAYER_PROFILE.physique,faceShape:PLAYER_PROFILE.faceShape,people:PLAYER_PROFILE.people});scene.add(hum.group);
+    const hum=buildHumanoid({skin:PLAYER_PROFILE.skin,shirt:PLAYER_PROFILE.shirt,pants:PLAYER_PROFILE.pants,boot:PLAYER_PROFILE.boot||0x2a1d14,hair:PLAYER_PROFILE.hair,belt:0x6b4a2b,eye:PLAYER_PROFILE.eye||0x1a1a1a,physique:PLAYER_PROFILE.physique,faceShape:PLAYER_PROFILE.faceShape,people:PLAYER_PROFILE.people,gender:PLAYER_PROFILE.gender});scene.add(hum.group);
     if(this.equip.weapon&&ITEMS[this.equip.weapon]){const wtype=ITEMS[this.equip.weapon].wtype||"sword";const matName=this.equip.weapon.split("_")[1]||"wood";mountSheathedWeapon(hum,buildWeapon(wtype,matName));}
     let rot=0;let dragging=false,lastX=0;
     const onDown=e=>{dragging=true;lastX=e.clientX;};const onUp=()=>dragging=false;const onMove=e=>{if(dragging){rot+=(e.clientX-lastX)*0.01;lastX=e.clientX;}};
@@ -2480,7 +2509,7 @@ function holdWeapon(w){w.position.set(0,-0.3,-0.02);w.rotation.set(0.6,0,0);}
 
 class Player{
   constructor(scene){
-    const h=this.h=buildHumanoid({skin:PLAYER_PROFILE.skin,shirt:PLAYER_PROFILE.shirt,pants:PLAYER_PROFILE.pants,boot:PLAYER_PROFILE.boot||0x2a1d14,hair:PLAYER_PROFILE.hair,belt:0x6b4a2b,eye:PLAYER_PROFILE.eye||0x1a1a1a,physique:PLAYER_PROFILE.physique,faceShape:PLAYER_PROFILE.faceShape,people:PLAYER_PROFILE.people});this.h.body.scale.y=PLAYER_PROFILE.bodyHeight||1;this.h.body.scale.x=PLAYER_PROFILE.bodyWidth||1;this.h.body.scale.z=1+(1-(PLAYER_PROFILE.bodyWidth||1))*0.35;this.h.aL.top.scale.y=this.h.aR.top.scale.y=PLAYER_PROFILE.armLength||1;this.h.lL.top.scale.y=this.h.lR.top.scale.y=PLAYER_PROFILE.legLength||1;
+    const h=this.h=buildHumanoid({skin:PLAYER_PROFILE.skin,shirt:PLAYER_PROFILE.shirt,pants:PLAYER_PROFILE.pants,boot:PLAYER_PROFILE.boot||0x2a1d14,hair:PLAYER_PROFILE.hair,belt:0x6b4a2b,eye:PLAYER_PROFILE.eye||0x1a1a1a,physique:PLAYER_PROFILE.physique,faceShape:PLAYER_PROFILE.faceShape,people:PLAYER_PROFILE.people,gender:PLAYER_PROFILE.gender});this.h.body.scale.y=PLAYER_PROFILE.bodyHeight||1;this.h.body.scale.x=PLAYER_PROFILE.bodyWidth||1;this.h.body.scale.z=1+(1-(PLAYER_PROFILE.bodyWidth||1))*0.35;this.h.aL.top.scale.y=this.h.aR.top.scale.y=PLAYER_PROFILE.armLength||1;this.h.lL.top.scale.y=this.h.lR.top.scale.y=PLAYER_PROFILE.legLength||1;
     if(h.sheathGroup){h.sheathGroup.visible=false;if(h.sheathGroup.parent)h.sheathGroup.parent.remove(h.sheathGroup);}this.mesh=h.group;scene.add(this.mesh);
     this.vel=new THREE.Vector3();this.onGround=false;this._fallPeakY=null;this.facing=0;this.phase=0;this.t=0;this.hp=100;this.attackT=0;
     this.mesh.position.set(0,heightAt(0,0),0);
@@ -3268,7 +3297,7 @@ class Game{
 
   setupCreationFlow(){window.__rafOriCreationReady=true;
     // Création de personnage directe : aucun compte, mot de passe ou profil local.
-    const temp={name:"Aventurier",skin:PLAYER_PROFILE.skin,eye:PLAYER_PROFILE.eye||0x24160f,hair:PLAYER_PROFILE.hair,shirt:PLAYER_PROFILE.shirt,pants:PLAYER_PROFILE.pants,boot:PLAYER_PROFILE.boot||0x34271f,physique:PLAYER_PROFILE.physique||"normal",faceShape:PLAYER_PROFILE.faceShape||"ovale",bodyHeight:1,bodyWidth:1,armLength:1,legLength:1,people:"humain",classId:"guerrier",baseSkill:null};
+    const temp={name:"Aventurier",gender:PLAYER_PROFILE.gender||"masculin",skin:PLAYER_PROFILE.skin,eye:PLAYER_PROFILE.eye||0x24160f,hair:PLAYER_PROFILE.hair,shirt:PLAYER_PROFILE.shirt,pants:PLAYER_PROFILE.pants,boot:PLAYER_PROFILE.boot||0x34271f,physique:PLAYER_PROFILE.physique||"normal",faceShape:PLAYER_PROFILE.faceShape||"ovale",bodyHeight:1,bodyWidth:1,armLength:1,legLength:1,people:"humain",classId:"guerrier",baseSkill:null};
     CONFIG.saveKey="rafori_fantasy_save_v1";
     CONFIG.saveLegacyKeyPrefix="craft_horizon_v";
     PLAYER_PROFILE.firstName="";PLAYER_PROFILE.lastName="";PLAYER_PROFILE.accountId=null;
@@ -3297,7 +3326,7 @@ class Game{
     bindBtn("raceConfirmBtn", ()=>{if(!temp.people)return;$("raceChoice").hidden=true;this.showLoading("Choix de la compétence","Chargement...",()=>{$("skillsBase").hidden=false;this.buildBaseSkillsScreen(temp);});});
     bindBtn("skillsBack", ()=> {$("skillsBase").hidden=true;$("raceChoice").hidden=false;});
     bindBtn("skillsConfirmBtn", ()=>{
-      PLAYER_PROFILE.name=temp.name;PLAYER_PROFILE.skin=temp.skin;PLAYER_PROFILE.eye=temp.eye;PLAYER_PROFILE.hair=temp.hair;PLAYER_PROFILE.shirt=temp.shirt;PLAYER_PROFILE.pants=temp.pants;PLAYER_PROFILE.boot=temp.boot;PLAYER_PROFILE.physique=temp.physique;PLAYER_PROFILE.faceShape=temp.faceShape;PLAYER_PROFILE.bodyHeight=temp.bodyHeight;PLAYER_PROFILE.bodyWidth=temp.bodyWidth;PLAYER_PROFILE.armLength=temp.armLength;PLAYER_PROFILE.legLength=temp.legLength;PLAYER_PROFILE.people=temp.people;PLAYER_PROFILE.classId=temp.classId;
+      PLAYER_PROFILE.name=temp.name;PLAYER_PROFILE.gender=temp.gender||"masculin";PLAYER_PROFILE.skin=temp.skin;PLAYER_PROFILE.eye=temp.eye;PLAYER_PROFILE.hair=temp.hair;PLAYER_PROFILE.shirt=temp.shirt;PLAYER_PROFILE.pants=temp.pants;PLAYER_PROFILE.boot=temp.boot;PLAYER_PROFILE.physique=temp.physique;PLAYER_PROFILE.faceShape=temp.faceShape;PLAYER_PROFILE.bodyHeight=temp.bodyHeight;PLAYER_PROFILE.bodyWidth=temp.bodyWidth;PLAYER_PROFILE.armLength=temp.armLength;PLAYER_PROFILE.legLength=temp.legLength;PLAYER_PROFILE.people=temp.people;PLAYER_PROFILE.classId=temp.classId;
       this.rpg.classes=[temp.classId];this.rpg.baseSkill=temp.baseSkill;this.rpg.learnClassSpells(temp.classId);
       if(temp.baseSkill){const spKey={base_spark:"spark",base_fireball:"fireball",base_frost:"frost",base_lightning:"lightning",base_heal:"heal"}[temp.baseSkill];if(spKey&&!this.rpg.known.includes(spKey)){this.rpg.known.push(spKey);this.rpg.slots[0]=spKey;}if(temp.baseSkill==="base_analysis"){this.rpg.baseSkill="analysis";}}
       this.scene.remove(this.player.mesh);this.player=new Player(this.scene);this.rpg.refresh();
@@ -3324,7 +3353,7 @@ class Game{
     const ring=new THREE.Mesh(new THREE.TorusGeometry(0.86,0.025,4,8),new THREE.MeshStandardMaterial({color:0xd8ad58,metalness:0.45,roughness:0.5,flatShading:false}));ring.rotation.x=Math.PI/2;ring.position.y=-0.005;scene.add(ring);
     let hum=null,rot=0,dragging=false,lastX=0,raf=0,stopped=false;
     const disposeModel=()=>{if(!hum)return;scene.remove(hum.group);hum.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m&&m.dispose&&m.dispose());else if(o.material.dispose)o.material.dispose();}});hum=null;};
-    const rebuild=()=>{disposeModel();hum=buildHumanoid({skin:temp.skin,shirt:temp.shirt,pants:temp.pants,boot:temp.boot||0x34271f,hair:temp.hair,belt:0xb48a42,eye:temp.eye||0x24160f,physique:temp.physique,faceShape:temp.faceShape,people:temp.people||"humain"});hum.group.scale.setScalar(1.05);hum.body.scale.y=temp.bodyHeight||1;hum.body.scale.x=temp.bodyWidth||1;hum.body.scale.z=1+(1-(temp.bodyWidth||1))*0.35;hum.aL.top.scale.y=hum.aR.top.scale.y=temp.armLength||1;hum.lL.top.scale.y=hum.lR.top.scale.y=temp.legLength||1;scene.add(hum.group);};
+    const rebuild=()=>{disposeModel();hum=buildHumanoid({skin:temp.skin,shirt:temp.shirt,pants:temp.pants,boot:temp.boot||0x34271f,hair:temp.hair,belt:0xb48a42,eye:temp.eye||0x24160f,physique:temp.physique,faceShape:temp.faceShape,people:temp.people||"humain",gender:temp.gender});hum.group.scale.setScalar(1.05);hum.body.scale.y=temp.bodyHeight||1;hum.body.scale.x=temp.bodyWidth||1;hum.body.scale.z=1+(1-(temp.bodyWidth||1))*0.35;hum.aL.top.scale.y=hum.aR.top.scale.y=temp.armLength||1;hum.lL.top.scale.y=hum.lR.top.scale.y=temp.legLength||1;scene.add(hum.group);};
     const resize=()=>{if(stopped)return;const r=cv.parentElement.getBoundingClientRect(),w=Math.max(180,Math.floor(r.width)),h=Math.max(180,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
     const onDown=e=>{dragging=true;lastX=e.clientX;try{cv.setPointerCapture(e.pointerId);}catch(_){};e.preventDefault();};
     const onMove=e=>{if(!dragging)return;rot+=(e.clientX-lastX)*0.012;lastX=e.clientX;e.preventDefault();};
@@ -3335,6 +3364,7 @@ class Game{
     this._createPreview={renderer,disposeModel,dispose:()=>{if(stopped)return;stopped=true;cancelAnimationFrame(raf);window.removeEventListener("resize",resizeHandler);cv.removeEventListener("pointerdown",onDown);cv.removeEventListener("pointermove",onMove);cv.removeEventListener("pointerup",onUp);cv.removeEventListener("pointercancel",onUp);disposeModel();try{renderer.dispose();}catch(_){};this._createPreview=null;}};
     const buildSwatches=(elId,key)=>{const el=$(elId);el.innerHTML="";PALETTES[key].forEach(c=>{const b=document.createElement("button");b.type="button";b.className="pro-swatch"+(c===temp[key]?" selected":"");b.style.background="#"+c.toString(16).padStart(6,"0");b.setAttribute("aria-label",key+" "+c.toString(16));b.title="#"+c.toString(16).padStart(6,"0");b.onclick=()=>{temp[key]=c;buildSwatches(elId,key);rebuild();};el.appendChild(b);});};
     buildSwatches("palSkin","skin");buildSwatches("palEye","eye");buildSwatches("palHair","hair");buildSwatches("palShirt","shirt");buildSwatches("palPants","pants");buildSwatches("palBoot","boot");
+    const genderRoot=$("genderChoices");if(genderRoot){genderRoot.querySelectorAll("button").forEach(b=>{b.classList.toggle("selected",b.dataset.gender===temp.gender);b.onclick=()=>{temp.gender=b.dataset.gender;genderRoot.querySelectorAll("button").forEach(x=>x.classList.toggle("selected",x.dataset.gender===temp.gender));rebuild();};});}
     const syncChoices=(root,attr,prop)=>{const el=$(root);if(!el)return;el.querySelectorAll("button").forEach(b=>{b.classList.toggle("selected",b.dataset[attr]===temp[prop]);b.onclick=()=>{temp[prop]=b.dataset[attr];syncChoices(root,attr,prop);rebuild();};});};syncChoices("physiqueChoices","phys","physique");syncChoices("faceChoices","face","faceShape");
     [["bodyHeight","heightValue","bodyHeight"],["bodyWidth","widthValue","bodyWidth"],["armLength","armValue","armLength"],["legLength","legValue","legLength"]].forEach(([id,out,key])=>{const el=$(id),o=$(out);if(!el)return;el.value=temp[key]||1;if(o)o.value=Number(el.value).toFixed(2);el.oninput=()=>{temp[key]=Number(el.value);if(o)o.value=temp[key].toFixed(2);rebuild();};});
     $("cName").value=temp.name;
