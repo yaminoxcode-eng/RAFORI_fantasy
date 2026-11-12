@@ -5061,15 +5061,15 @@ window.addEventListener("load",()=>{
         const ang = Math.random()*6.28, rr = 2+Math.random()*Math.max(3,(v.radius||10)*0.45);
         const x=v.x+Math.cos(ang)*rr, z=v.z+Math.sin(ang)*rr;
         try{
-          const h = buildHumanoid({skin:0xc99a70,shirt:0x6a8a4a,pants:0x4a3a2a,boot:0x2a1a12,hair:0x3a2a1a,belt:0x8a6a3a,eye:0x222222,people:"humain"});
+          const h = buildHumanoid({skin:0xc99a70,shirt:0x6a8a4a,pants:0x4a3a2a,boot:0x2a1a12,hair:0x3a2a1a,belt:0x8a6a3a,eye:0x222222,people:v.people||"humain"});
           h.group.position.set(x,heightAt(x,z),z);
           this.scene.add(h.group);
           const nm = namesV[(i+Math.abs(v.x|0))%namesV.length];
-          const role = rolesV[i%rolesV.length];
+          const role = rolesV[i%rolesV.length];\n          if(role==="enfant du village")h.group.scale.setScalar(0.78);
           const isQuest = i===0;
           const npc = {
             name: nm,
-            race:"humain",
+            race:v.people||"humain",
             mesh:h.group, x,z,
             type: isQuest?"villager_quest":"villager",
             dialog: isQuest
