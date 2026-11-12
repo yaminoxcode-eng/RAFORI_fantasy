@@ -1048,8 +1048,8 @@ function buildHumanoid(c){
     // Chevelure longue en mèches superposées, attachée à la tête et au dos.
     const backHair=add(body,new THREE.SphereGeometry(0.205,14,10),hairMat,0,1.78,0.105);backHair.scale.set(0.96,1.18,0.72);
     for(const sx of [-1,1]){
-      const sideLock=add(body,new THREE.CapsuleGeometry(0.038,0.34,4,8),hairMat,sx*0.175,1.62,0.075);sideLock.rotation.z=sx*0.07;
-      const rearLock=add(body,new THREE.CapsuleGeometry(0.045,0.43,4,8),hairMat,sx*0.115,1.38,0.19);rearLock.rotation.z=-sx*0.08;
+      const sideLock=add(body,new THREE.SphereGeometry(0.045,10,8),hairMat,sx*0.175,1.62,0.075);sideLock.scale.set(0.9,3.7,0.9);sideLock.rotation.z=sx*0.07;
+      const rearLock=add(body,new THREE.SphereGeometry(0.05,10,8),hairMat,sx*0.115,1.38,0.19);rearLock.scale.set(0.9,5.0,0.9);rearLock.rotation.z=-sx*0.08;
     }
     add(body,new THREE.SphereGeometry(0.09,10,7),hairMat,0,2.015,0.015).scale.set(1.05,0.45,0.9);
   }
@@ -3382,7 +3382,7 @@ class Game{
     const rim=new THREE.DirectionalLight(0x9dc9ff,0.7);rim.position.set(-2.5,3.5,-3);scene.add(rim);
     const pl=new THREE.PointLight(0xe8c77a,0.55,10);pl.position.set(-2,3,3);scene.add(pl);
     scene.add(new THREE.GridHelper(4,8,0x3b705b,0x24343a));
-    const hum=buildHumanoid({skin:temp.skin,shirt:temp.shirt,pants:temp.pants,boot:temp.boot||0x2a1d14,hair:temp.hair,belt:0x6b4a2b,eye:temp.eye||0x1a1a1a,physique:temp.physique,faceShape:temp.faceShape,people:temp.people});hum.body.scale.y=temp.bodyHeight||1;hum.body.scale.x=temp.bodyWidth||1;hum.body.scale.z=1+(1-(temp.bodyWidth||1))*0.35;hum.aL.top.scale.y=hum.aR.top.scale.y=temp.armLength||1;hum.lL.top.scale.y=hum.lR.top.scale.y=temp.legLength||1;scene.add(hum.group);
+    const hum=buildHumanoid({skin:temp.skin,shirt:temp.shirt,pants:temp.pants,boot:temp.boot||0x2a1d14,hair:temp.hair,belt:0x6b4a2b,eye:temp.eye||0x1a1a1a,physique:temp.physique,faceShape:temp.faceShape,people:temp.people,gender:temp.gender});hum.body.scale.y=temp.bodyHeight||1;hum.body.scale.x=temp.bodyWidth||1;hum.body.scale.z=1+(1-(temp.bodyWidth||1))*0.35;hum.aL.top.scale.y=hum.aR.top.scale.y=temp.armLength||1;hum.lL.top.scale.y=hum.lR.top.scale.y=temp.legLength||1;scene.add(hum.group);
     let rot=0,dragging=false,lastX=0;
     cv.addEventListener("mousedown",e=>{dragging=true;lastX=e.clientX;});
     addEventListener("mouseup",()=>dragging=false);
@@ -3408,7 +3408,7 @@ class Game{
         const cam=new THREE.PerspectiveCamera(45,1,0.1,100);cam.position.set(0,2,3.5);cam.lookAt(0,1.5,0);
         sc.add(new THREE.HemisphereLight(0xcfe6ff,0x6b7a4a,0.65));
         const d=new THREE.DirectionalLight(0xffe8bf,0.9);d.position.set(2,4,2);sc.add(d);
-        const hm=buildHumanoid({skin:temp.skin,shirt:temp.shirt,pants:temp.pants,boot:temp.boot||0x2a1d14,hair:temp.hair,belt:0x6b4a2b,eye:temp.eye||0x1a1a1a,physique:temp.physique,faceShape:temp.faceShape,people:key});sc.add(hm.group);
+        const hm=buildHumanoid({skin:temp.skin,shirt:temp.shirt,pants:temp.pants,boot:temp.boot||0x2a1d14,hair:temp.hair,belt:0x6b4a2b,eye:temp.eye||0x1a1a1a,physique:temp.physique,faceShape:temp.faceShape,people:key,gender:temp.gender});sc.add(hm.group);
         let rot=Math.random()*6.28;
         const tick=()=>{if(!card.parentNode){r.dispose();return;}requestAnimationFrame(tick);rot+=0.01;hm.group.rotation.y=rot;hm.group.position.y=Math.sin(Date.now()*0.002)*0.03;r.render(sc,cam);};tick();
       });
