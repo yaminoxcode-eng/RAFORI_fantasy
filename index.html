@@ -16123,6 +16123,125 @@ try{if(typeof Player!=="undefined"&&Player.prototype.update&&!Player.prototype.u
 console.info("[RAFORI V32.6] monture corrigée, bestiaire complet et sauvegarde des victoires actifs");
 })();
 </script>
+
+<script>
+/* RAFORI V32.7 — correctifs ciblés demandés */
+(function(){
+"use strict";
+if(typeof Game==="undefined") return;
+
+/* 1) Le VFX de l'arc de vent est retourné indépendamment du calcul des dégâts.
+   La zone de frappe reste orientée comme la caméra ; seul l'effet visuel est inversé. */
+if(typeof spawnSlash==="function" && !window.__rafSlashFrontFix){
+  window.__rafSlashFrontFix=true;
+  const oldSpawnSlash=spawnSlash;
+  window.spawnSlash=function(scene,from,yaw,color){return oldSpawnSlash(scene,from,yaw+Math.PI,color);};
+}
+
+/* 2) Carte finie : 5,6 x 5,6 km, affichée intégralement à l'ouverture. */
+Game.prototype.mapState=function(){return this._mv||(this._mv={cx:0,cz:0,range:2800});};
+const oldMapZoom=Game.prototype.mapZoomBtn;
+Game.prototype.mapZoomBtn=function(k){
+  const mv=this.mapState(),p=this.player.position;
+  if(k==="in")mv.range=Math.max(100,mv.range*.6);
+  else if(k==="out")mv.range=Math.min(2800,mv.range*1.6);
+  else if(k==="all"){mv.cx=0;mv.cz=0;mv.range=2800;}
+  else if(k==="me"){mv.cx=p.x;mv.cz=p.z;mv.range=Math.min(mv.range,900);}
+  this.drawBigMap();
+};
+Game.prototype.toggleMap=function(){
+  if(!$("bigmap").hidden){this.closeMap();return;}
+  $("bigmap").hidden=false;this.menuOpen=true;
+  this.input.keys.clear();try{document.exitPointerLock();}catch(_){}
+  this._mv={cx:0,cz:0,range:2800};
+  this.drawBigMap();
+};
+/* Le monde est borné aux dimensions annoncées par CONFIG.regionWidth/Depth.
+   Le clamp de déplacement existant reste la référence ; la carte montre ces mêmes limites. */
+const oldDrawMap=Game.prototype.drawBigMap;
+Game.prototype.drawBigMap=function(){
+  oldDrawMap.call(this);
+  try{
+    const cv=$("bmc"),ctx=cv.getContext("2d"),p=this.player.position;
+    const half=(CONFIG.regionWidth||5600)/2;
+    const edge=Math.max(0,half-Math.max(Math.abs(p.x),Math.abs(p.z)));
+    const walkDays=edge/(CONFIG.player.walk*480);
+    const runDays=edge/(CONFIG.player.run*480);
+    ctx.save();ctx.fillStyle="rgba(5,13,22,.82)";ctx.fillRect(10,34,cv.width-20,48);
+    ctx.font="bold 13px system-ui";ctx.fillStyle="#fff3c4";
+    ctx.fillText("Monde explorable : 5,6 × 5,6 km  ·  Limites : ±2,8 km",20,53);
+    ctx.font="12px system-ui";ctx.fillStyle="#e7f1ff";
+    ctx.fillText("Jusqu'au bord le plus proche : "+walkDays.toFixed(1)+" jour(s) à pied · "+runDays.toFixed(1)+" jour(s) en courant",20,72);
+    ctx.restore();
+  }catch(_){}
+};
+
+/* 3) Spawn animal plus robuste : plusieurs essais sur terrain valide au lieu d'un seul tirage. */
+Game.prototype.spawnWildlife=function(){
+  const p=this.player.position,zone=zoneAt(p.x,p.z);
+  const kinds=zone==="taiga"?["loup","ours","cerf"]:zone==="desert"?["renard","lapin","sanglier"]:["cerf","sanglier","renard","lapin","loup","ours"];
+  for(let attempt=0;attempt<14;attempt++){
+    const kind=kinds[Math.floor(Math.random()*kinds.length)];
+    const a=Math.random()*Math.PI*2,d=18+Math.random()*48;
+    const x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;
+    if(heightAt(x,z)<=CONFIG.waterLevel+1||villagesNear(x,z,8).length)continue;
+    if(this.wildlife.some(v=>v&&v.group&&Math.hypot(v.group.position.x-x,v.group.position.z-z)<7))continue;
+    const animal=new WildlifeAnimal(x,z,kind);this.wildlife.push(animal);this.scene.add(animal.group);return animal;
+  }
+  return null;
+};
+
+/* 4) Cheval garanti près du héros quelques secondes après le spawn.
+   Les trois chevaux sauvages du monde restent également présents. */
+function ensureStarterHorse(g){
+  if(!g||!g.player||!g.horses||typeof MountableHorse==="undefined")return false;
+  const p=g.player.position;
+  if(g.horses.some(h=>h&&h.group&&h.group.position.distanceTo(p)<22))return true;
+  for(let i=0;i<24;i++){
+    const a=Math.random()*Math.PI*2,d=7+Math.random()*7;
+    const x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;
+    if(heightAt(x,z)<=CONFIG.waterLevel+1||villagesNear(x,z,5).length)continue;
+    const h=new MountableHorse(x,z);g.horses.push(h);g.scene.add(h.group);
+    if(g.rpg&&g.rpg.toast)g.rpg.toast("🐎 Un cheval est arrivé près de toi !");
+    return true;
+  }
+  return false;
+}
+const oldInitWorld=Game.prototype.initWorld;
+Game.prototype.initWorld=function(){
+  const hadSave=(()=>{try{return !!localStorage.getItem(CONFIG.saveKey);}catch(_){return false;}})();
+  const result=oldInitWorld.apply(this,arguments);
+  const g=this;
+  [1800,3800,6500].forEach(ms=>setTimeout(()=>ensureStarterHorse(g),ms));
+  /* Dépose le petit équipement de départ au sol uniquement lors d'une première partie.
+     Chaque emplacement reçoit son premier équipement de base disponible dans ITEMS. */
+  if(!hadSave)setTimeout(()=>{
+    try{
+      if(g._rafStarterGroundKitDone||!g.rpg||!g.player)return;
+      g._rafStarterGroundKitDone=true;
+      const bySlot={};
+      for(const [id,it] of Object.entries(ITEMS||{})){
+        if(it&&it.t==="equip"&&it.s&&!bySlot[it.s])bySlot[it.s]=id;
+      }
+      const chosen=Object.values(bySlot);
+      const p=g.player.position;
+      chosen.forEach((id,i)=>{
+        const a=i*2.399,d=2.8+(i%2)*1.1;
+        const x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;
+        g.createDrop(id,x,z);
+      });
+      const starter=g.rpg.inv.findIndex(v=>v&&v.id==="dagger_wood");
+      if(starter>=0)g.rpg.inv[starter]=null;
+      g.rpg.refresh();
+      g.rpg.toast("🎒 Ton équipement de départ est posé au sol. Approche-toi et ramasse-le.");
+    }catch(e){console.warn("[RAFORI] équipement au sol",e);}
+  },2200);
+  return result;
+};
+console.info("[RAFORI V32.7] carte intégrale, spawns animaux renforcés, cheval de départ et équipement au sol");
+})();
+</script>
+
 </body>
 </html><script>
 /* ============================================================
