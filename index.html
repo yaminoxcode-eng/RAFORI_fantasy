@@ -2106,16 +2106,16 @@ class Chunk{
     const rng=mulberry32((cx*73856093)^(cz*19349663)^CONFIG.seed);
     const free=(x,z)=>Math.hypot(x,z)>8&&!vill.some(v=>Math.hypot(v.x-x,v.z-z)<v.radius+5);
     const oaks=[],pines=[],rocks=[],herbs=[];
-    for(let i=0;i<Math.floor(CONFIG.treesPerChunk*0.75);i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),s=0.8+rng()*0.9,r=rng(),rot=rng()*6.28;if(y>W+1.2&&y<16&&free(x,z))(y>8||r<0.4?pines:oaks).push({x,y,z,s,rot});}
+    for(let i=0;i<Math.floor(CONFIG.treesPerChunk*0.92);i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),s=0.8+rng()*0.9,r=rng(),rot=rng()*6.28;if(y>W+1.2&&y<16&&free(x,z))(y>8||r<0.4?pines:oaks).push({x,y,z,s,rot});}
     for(let i=0;i<10;i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),sx=0.5+rng()*1.3,a=rng(),b=rng(),rot=rng()*6.28;if(y>W+0.5&&free(x,z))rocks.push({x,y,z,sx,sy:sx*(0.5+a*0.4),sz:sx*(0.7+b*0.5),rot});}
     for(let i=0;i<14;i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z);if(y>W+1&&free(x,z)&&zoneAt(x,z)!=="desert")herbs.push({x,y,z});}
     const mk=(geo,mat,n)=>{const m=new THREE.InstancedMesh(geo,mat,Math.max(1,n));m.count=n;m.castShadow=true;m.receiveShadow=true;m.instanceColor=new THREE.BufferAttribute(new Float32Array(Math.max(1,n)*3).fill(1),3);m.frustumCulled=false;this.group.add(m);this.parts.push(m);return m;};
     const all=[...oaks,...pines],trunks=mk(sh.trunkGeo,sh.trunkMat,all.length);
     all.forEach((t,i)=>placeInst(trunks,i,t.x,t.y,t.z,t.s,t.s,t.s,t.rot));
     const oak=mk(sh.oakGeo,sh.leafMat,oaks.length);
-    oaks.forEach((t,i)=>placeInst(oak,i,t.x,t.y+3.6*t.s,t.z,1.25*t.s,t.s,1.25*t.s,t.rot,tint4(0x3fbb3a,rng)));
+    oaks.forEach((t,i)=>placeInst(oak,i,t.x,t.y+3.6*t.s,t.z,1.25*t.s,t.s,1.25*t.s,t.rot,tint4([0x3fbb3a,0x65ad39,0x4f963e,0xc18b43][Math.floor(rng()*4)],rng)));
     const lo=mk(sh.pineLoGeo,sh.leafMat,pines.length),hi=mk(sh.pineHiGeo,sh.leafMat,pines.length);
-    pines.forEach((t,i)=>{const k=tint4(0x2a9a50,rng);placeInst(lo,i,t.x,t.y+2.6*t.s,t.z,t.s,t.s,t.s,t.rot,k);placeInst(hi,i,t.x,t.y+4.4*t.s,t.z,t.s,t.s,t.s,t.rot,k);});
+    pines.forEach((t,i)=>{const k=tint4([0x2a9a50,0x357f50,0x4c8b5d][Math.floor(rng()*3)],rng);placeInst(lo,i,t.x,t.y+2.6*t.s,t.z,t.s,t.s,t.s,t.rot,k);placeInst(hi,i,t.x,t.y+4.4*t.s,t.z,t.s,t.s,t.s,t.rot,k);});
     const bm=(mesh,idx)=>{const m=new THREE.Matrix4();mesh.getMatrixAt(idx,m);return m.clone();};
     all.forEach((t,i)=>{const vs=[{mesh:trunks,index:i,matrix:bm(trunks,i)}];if(i<oaks.length)vs.push({mesh:oak,index:i,matrix:bm(oak,i)});else{const j=i-oaks.length;vs.push({mesh:lo,index:j,matrix:bm(lo,j)},{mesh:hi,index:j,matrix:bm(hi,j)});}this.colliders.push({x:t.x,z:t.z,r:0.45*t.s,k:"tree",kindName:oaks.includes(t)?"Chêne":"Pin",id:`tree:${t.x.toFixed(2)}:${t.z.toFixed(2)}`,hits:0,visuals:vs});});
     const rk=mk(sh.rockGeo,sh.rockMat,rocks.length);
@@ -2126,12 +2126,12 @@ class Chunk{
     herbMesh.instanceMatrix.needsUpdate=true;if(herbMesh.instanceColor)herbMesh.instanceColor.needsUpdate=true;
     herbs.forEach((t,i)=>this.colliders.push({x:t.x,z:t.z,r:0.3,k:"herb",kindName:"Herbe médicinale",id:`herb:${t.x.toFixed(2)}:${t.z.toFixed(2)}`,hits:0,visuals:[{mesh:herbMesh,index:i,matrix:bm(herbMesh,i)}]}));
     // Massifs de petites fleurs sauvages : variation de couleur et densité sans objets individuels coûteux.
-    const flowerSites=[];for(let i=0;i<44;i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),zone=zoneAt(x,z);if(y>W+0.8&&y<18&&(zone==="meadow"||zone==="forest"||zone==="plains")&&free(x,z))flowerSites.push({x,y,z,s:0.55+rng()*0.65,rot:rng()*6.28,c:[0xffe8a1,0xff8eb7,0xc6b3ff,0xffffff,0xffb96a][Math.floor(rng()*5)]});}
+    const flowerSites=[];for(let i=0;i<60;i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),zone=zoneAt(x,z);if(y>W+0.8&&y<18&&(zone==="meadow"||zone==="forest"||zone==="plains")&&free(x,z))flowerSites.push({x,y,z,s:0.55+rng()*0.65,rot:rng()*6.28,c:[0xffe8a1,0xff8eb7,0xc6b3ff,0xffffff,0xffb96a][Math.floor(rng()*5)]});}
     if(flowerSites.length){const stemMat=new THREE.MeshStandardMaterial({color:0x4f8b3c,roughness:0.9}),petalMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.72,emissive:0x171020,emissiveIntensity:0.12});const stems=new THREE.InstancedMesh(new THREE.CylinderGeometry(0.012,0.018,0.22,5),stemMat,flowerSites.length),petals=new THREE.InstancedMesh(new THREE.SphereGeometry(0.065,6,5),petalMat,flowerSites.length);stems.count=petals.count=flowerSites.length;stems.frustumCulled=petals.frustumCulled=false;flowerSites.forEach((f,i)=>{placeInst(stems,i,f.x,f.y+0.11*f.s,f.z, f.s,f.s,f.s,f.rot);placeInst(petals,i,f.x,f.y+0.23*f.s,f.z, f.s,f.s*0.72,f.s,f.rot,f.c);});stems.instanceMatrix.needsUpdate=petals.instanceMatrix.needsUpdate=true;this.group.add(stems,petals);this.parts.push(stems,petals);}
     for(let i=0;i<4;i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),zone=zoneAt(x,z);if((zone==="crystal"||zone==="rocky")&&y>W+1&&free(x,z)){const crystal=new THREE.Mesh(sh.crystalGeo,sh.crystalMat);crystal.position.set(x,y,z);crystal.rotation.y=(x*12.9898+z*78.233)%6.28;crystal.scale.setScalar(0.9+Math.abs((x*3.7+z*1.3)%1)*0.6);this.group.add(crystal);this.colliders.push({x,z,r:0.4,k:"manacrystal",kindName:"Cristal de mana",id:`mc:${x.toFixed(2)}:${z.toFixed(2)}`,hits:0,visuals:[]});}}
     const rg=mulberry32((cx*83492791)^(cz*2971215073)^CONFIG.seed^0x5bd1);
     const grassL=[],flowL=[],FPAL=[0xffffff,0xffd84a,0xff6f91,0xb38cff,0xff9a3d];
-    for(let i=0;i<70;i++){
+    for(let i=0;i<105;i++){
       const x=ox+rg()*S,z=oz+rg()*S,y=heightAt(x,z),zn=zoneAt(x,z),s=0.7+rg()*0.9,rot=rg()*6.28,pf=rg(),pc=rg();
       if(y<=W+1.4||y>26||!free(x,z)||zn==="desert"||zn==="crystal"||zn==="volcanic"||zn==="rocky")continue;
       const col2=new THREE.Color(zn==="forest"?0x8ee070:zn==="taiga"?0x7ac090:zn==="marsh"?0x80d090:0xd8f088).offsetHSL((rg()-0.5)*0.05,0,(rg()-0.5)*0.1);
@@ -2143,6 +2143,11 @@ class Chunk{
     const fh=mk(sh.flowerHeadGeo,sh.petalMat,flowL.length),fs=mk(sh.flowerStemGeo,sh.grassMat,flowL.length);
     flowL.forEach((t,i)=>{placeInst(fh,i,t.x,t.y-0.02,t.z,t.s,t.s,t.s,t.rot,t.col);placeInst(fs,i,t.x,t.y-0.02,t.z,t.s,t.s,t.s,t.rot);});
     for(const im of[fh,fs]){im.instanceMatrix.needsUpdate=true;im.instanceColor.needsUpdate=true;}
+    // Buissons bas en sous-bois et prairies : instancing pour garder un coût GPU faible.
+    const bushSites=[];for(let i=0;i<18;i++){const x=ox+rng()*S,z=oz+rng()*S,y=heightAt(x,z),zn=zoneAt(x,z);if(y>W+1&&y<20&&free(x,z)&&(zn==="forest"||zn==="meadow"||zn==="plains"||zn==="marsh"))bushSites.push({x,y,z,s:0.55+rng()*0.7,rot:rng()*6.28});}
+    const bushMesh=mk(sh.bushGeo,sh.bushMat,bushSites.length);
+    bushSites.forEach((b,i)=>placeInst(bushMesh,i,b.x,b.y+0.22*b.s,b.z,b.s*1.25,b.s*0.8,b.s*1.1,b.rot,tint4(0x4d8139,rng)));
+    bushMesh.instanceMatrix.needsUpdate=true;if(bushMesh.instanceColor)bushMesh.instanceColor.needsUpdate=true;
     const hs=[];for(const v of vill)for(const h of v.houses)if(h.x>=ox&&h.x<ox+S&&h.z>=oz&&h.z<oz+S)hs.push(h);
     const walls=mk(sh.wallGeo,sh.paintMat,hs.length),roofs=mk(sh.houseRoofGeo,sh.paintMat,hs.length),doors=mk(sh.doorGeo,sh.doorMat,hs.length);
     const windows=mk(sh.windowGeo,sh.windowMat,hs.length*4);
@@ -2191,6 +2196,7 @@ class World{
       windowMat:M({color:0xffffff,roughness:0.35,vertexColors:true,emissive:0x254d59,emissiveIntensity:0.28}),
       wellGeo:NAT.well,wellMat:M({color:0xffffff,roughness:0.95,vertexColors:true,side:THREE.DoubleSide}),
       herbGeo:NAT.herb,herbMat:M({color:0xffffff,roughness:0.7,vertexColors:true,side:THREE.DoubleSide,emissive:0x1a4a2a,emissiveIntensity:0.15}),
+      bushGeo:new THREE.DodecahedronGeometry(0.48,1),bushMat:M({color:0x4d8139,roughness:0.98,flatShading:true}),
       grassGeo:NAT.grass,grassMat:M({color:0xffffff,roughness:0.9,vertexColors:true,side:THREE.DoubleSide}),
       flowerHeadGeo:NAT.flowerHead,flowerStemGeo:NAT.flowerStem,petalMat:M({color:0xffffff,roughness:0.6,vertexColors:true,side:THREE.DoubleSide}),
       crystalGeo:NAT.crystal,crystalMat:M({color:0xffffff,vertexColors:true,roughness:0.15,metalness:0.25,emissive:0x3050a0,emissiveIntensity:1.1}),
@@ -2360,9 +2366,9 @@ const AudioEngine=(()=>{
   // Audio procédural inspiré de l'ambiance de DeepSeek : vent filtré, oiseaux,
   // grillons nocturnes, pas adaptés au terrain et effets de combat.
   let ctx=null,master=null,ambience=null,windGain=null,windFilter=null,musicGain=null;
-  let noiseWhite=null,noisePink=null,started=false,ambClock=0,birdClock=4,cricketClock=2,stepClock=0,lastPos=null,musicClock=0,musicIndex=0;
+  let noiseWhite=null,noisePink=null,started=false,ambClock=0,birdClock=4,cricketClock=2,animalClock=7,stepClock=0,lastPos=null,musicClock=0,musicIndex=0;
   let windSource=null,leafGain=null;
-  const melody=[523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,493.88,587.33,739.99,587.33];
+  const melody=[293.66,349.23,440.00,523.25,493.88,440.00,349.23,392.00,293.66,349.23,392.00,261.63,293.66,440.00,392.00,349.23];
   function ensure(){
     if(ctx)return ctx;
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
@@ -2390,7 +2396,7 @@ const AudioEngine=(()=>{
       const leafSrc=ctx.createBufferSource();leafSrc.buffer=noiseWhite;leafSrc.loop=true;leafSrc.connect(leafFilter);leafFilter.connect(leafGain);leafGain.connect(ambience);leafSrc.start();
       musicGain=ctx.createGain();musicGain.gain.value=.34;musicGain.connect(ambience);
       // Nappe fantasy douce, avec notes espacées dans update().
-      const pad=ctx.createOscillator(),pad2=ctx.createOscillator(),pg=ctx.createGain();pad.type='sine';pad.frequency.value=110;pad2.type='sine';pad2.frequency.value=164.81;pg.gain.value=.022;pad.connect(pg);pad2.connect(pg);pg.connect(musicGain);pad.start();pad2.start();
+      const pad=ctx.createOscillator(),pad2=ctx.createOscillator(),pg=ctx.createGain();pad.type='sine';pad.frequency.value=110;pad2.type='sine';pad2.frequency.value=164.81;pg.gain.value=.028;pad.connect(pg);pad2.connect(pg);pg.connect(musicGain);pad.start();pad2.start();
       started=true;
     }catch(e){console.warn('[audio ambiance]',e);started=false;}
   }
@@ -2400,6 +2406,16 @@ const AudioEngine=(()=>{
   }
   function bird(){if(!ensure()||!ctx)return;const now=ctx.currentTime,base=1700+Math.random()*1500,o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(base,now);o.frequency.exponentialRampToValueAtTime(base*(1.25+Math.random()*.3),now+.075);o.frequency.exponentialRampToValueAtTime(base*.9,now+.16);g.gain.setValueAtTime(.0001,now);g.gain.linearRampToValueAtTime(.027,now+.018);g.gain.exponentialRampToValueAtTime(.0001,now+.19);o.connect(g);if(ctx.createStereoPanner){const pan=ctx.createStereoPanner();pan.pan.value=Math.random()*1.6-.8;g.connect(pan);pan.connect(master);}else g.connect(master);o.start(now);o.stop(now+.21);}
   function cricket(){if(!ensure()||!ctx)return;const now=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=3900+Math.random()*700;g.gain.setValueAtTime(.0001,now);for(let i=0;i<4;i++){const t=now+i*.065;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.018,t+.012);g.gain.linearRampToValueAtTime(.0001,t+.04);}o.connect(g);g.connect(master);o.start(now);o.stop(now+.28);}
+  function animalCall(kind,distance){
+    const near=Math.max(0.12,1-Math.max(0,distance||0)/58),v=0.045*near;
+    if(kind==="cerf"){play(155,.42,"sawtooth",v*.55);play(310,.32,"sine",v*.38);}
+    else if(kind==="sanglier"){noiseBurst(360,"lowpass",v*.9,.22,noisePink);play(95,.18,"triangle",v*.45);}
+    else if(kind==="renard"){play(920,.12,"sine",v*.55);play(690,.16,"sine",v*.45);}
+    else if(kind==="lapin"){noiseBurst(2200,"highpass",v*.2,.08,noiseWhite);}
+    else if(kind==="loup"){play(220,.72,"sine",v*.8);play(330,.56,"triangle",v*.3);}
+    else if(kind==="ours"){play(72,.42,"sawtooth",v*.75);noiseBurst(180,"lowpass",v*.7,.28,noisePink);}
+    else if(kind==="cheval"){play(240,.24,"sawtooth",v*.35);play(480,.18,"sine",v*.3);}
+  }
   function step(kind='grass'){
     if(kind==='water'){noiseBurst(1500,'bandpass',.10,.18,noiseWhite);play(180,0.08,'triangle',.035);}
     else if(kind==='stone'){noiseBurst(1900,'highpass',.095,.07,noiseWhite);play(125,0.055,'triangle',.045);}
@@ -2424,7 +2440,8 @@ const AudioEngine=(()=>{
       if(leafGain)leafGain.gain.setTargetAtTime(night?.004:.009,ctx.currentTime,1.8);
       if(!night&&birdClock<=0){bird();if(Math.random()<.55)setTimeout(bird,160+Math.random()*260);birdClock=7+Math.random()*13;}
       if(night&&cricketClock<=0){cricket();cricketClock=2.2+Math.random()*4.5;}
-      if(musicClock<=0){const f=melody[musicIndex++%melody.length];play(f,.58,'sine',night?.018:.025);if(musicIndex%3===0)play(f/2,.72,'triangle',.012);musicClock=2.4+Math.random()*2.2;}
+      if(animalClock<=0){const p0=g&&g.player&&g.player.position,near=(g&&g.wildlife||[]).map(a=>({a,d:p0&&a&&a.group?Math.hypot(a.group.position.x-p0.x,a.group.position.z-p0.z):999})).filter(x=>x.a&&x.d<48);if(near.length){const pick=near[Math.floor(Math.random()*near.length)];animalCall(pick.a.kind,pick.d);animalClock=9+Math.random()*13;}else animalClock=4+Math.random()*6;}
+      if(musicClock<=0){const f=melody[musicIndex++%melody.length];play(f,.82,'sine',night?.026:.038);if(musicIndex%3===0)play(f/2,.92,'triangle',.018);if(musicIndex%4===0)play(f*1.5,.42,'sine',.012);musicClock=1.35+Math.random()*.45;}
       const p=g&&g.player&&g.player.position;if(p){if(!lastPos)lastPos={x:p.x,z:p.z};const d=Math.hypot(p.x-lastPos.x,p.z-lastPos.z),speed=dt>0?d/dt:0;if(d>.01){if(speed>.5&&stepClock<=0){step(surfaceAt(g,p));stepClock=speed>4?.27:.39;}lastPos.x=p.x;lastPos.z=p.z;}else if(stepClock<0)stepClock=0;}
     },
     hit(){play(180,.08,'square',.14);noiseBurst(1300,'bandpass',.07,.09,noiseWhite);},chop(){play(220,.06,'triangle',.12);noiseBurst(850,'lowpass',.08,.12,noiseWhite);},pickup(){play(660,.08,'sine',.12);play(880,.1,'sine',.09);play(1175,.12,'sine',.045);},
@@ -2443,14 +2460,14 @@ window.addEventListener('keydown',()=>{try{AudioEngine.resume();}catch(_){}},{on
 
 class Input{
   constructor(dom){
-    this.keys=new Set();this.dx=0;this.dy=0;this.wheel=0;this.dragging=false;
+    this.keys=new Set();this.dx=0;this.dy=0;this.wheel=0;this.dragging=false;this.mouseAttack=false;
     this.touchAxis={x:0,z:0};
     const isE=t=>t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable);
     addEventListener("keydown",e=>{if(isE(e.target))return;this.keys.add(e.code);if(e.code==="Space")e.preventDefault();AudioEngine.resume();});
     addEventListener("keyup",e=>this.keys.delete(e.code));
     addEventListener("blur",()=>this.keys.clear());
-    addEventListener("mousedown",e=>{if(e.target===dom)this.dragging=true;});
-    addEventListener("mouseup",()=>this.dragging=false);
+    addEventListener("mousedown",e=>{if(e.target===dom){this.dragging=true;if(e.button===0)this.mouseAttack=true;}});
+    addEventListener("mouseup",()=>{this.dragging=false;this.mouseAttack=false;});
     addEventListener("mousemove",e=>{if(document.pointerLockElement===dom||this.dragging){this.dx+=e.movementX;this.dy+=e.movementY;}});
     addEventListener("wheel",e=>this.wheel+=Math.sign(e.deltaY),{passive:true});
     this.setupTouchControls(dom);
@@ -3812,7 +3829,9 @@ class MountableHorse{
 
 class Game{
   constructor(){
-    this.renderer=new THREE.WebGLRenderer({canvas:$("gameCanvas"),antialias:false,powerPreference:"high-performance",stencil:false,depth:true});
+    const mobileDevice=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    const lowMemoryDevice=mobileDevice||(navigator.deviceMemory&&navigator.deviceMemory<=3);
+    this.renderer=new THREE.WebGLRenderer({canvas:$("gameCanvas"),antialias:!lowMemoryDevice,powerPreference:"high-performance",stencil:false,depth:true});
     this._rafContextLost=false;
     this.renderer.domElement.addEventListener("webglcontextlost",(ev)=>{
       ev.preventDefault();this._rafContextLost=true;
@@ -3825,8 +3844,7 @@ class Game{
       console.info("[WebGL] Contexte graphique restauré.");
     },false);
     // Démarrage très conservateur pour machines modestes (HP / intégrés).
-    const lowMemoryDevice=innerWidth<1100||(navigator.deviceMemory&&navigator.deviceMemory<=4)||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-    this.pixelRatioMax=lowMemoryDevice?0.55:Math.min(1.1,Math.max(0.7,window.devicePixelRatio||1));
+    this.pixelRatioMax=mobileDevice?0.85:(lowMemoryDevice?0.95:Math.min(1.6,Math.max(1.15,window.devicePixelRatio||1)));
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,this.pixelRatioMax));
     this.renderer.setSize(innerWidth,innerHeight);
     // Ombres désactivées par défaut sur machines modestes.
@@ -3839,12 +3857,12 @@ class Game{
     this.scene=new THREE.Scene();
     const sky=new THREE.Color(0x9fcff0);
     // La brume commence loin du joueur : elle ne doit plus blanchir les arbres ni le terrain proche.
-    this.scene.fog=new THREE.Fog(0xa8d4e8,CONFIG.chunkSize*(CONFIG.viewRadius+0.15),CONFIG.chunkSize*(CONFIG.viewRadius+1.55));
+    this.scene.fog=new THREE.Fog(0xa8d4e8,CONFIG.chunkSize*(CONFIG.viewRadius+0.45),CONFIG.chunkSize*(CONFIG.viewRadius+2.0));
     this.camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.1,900);
-    this.hemi=new THREE.HemisphereLight(0xd4ecff,0x5a7a3a,0.62);this.scene.add(this.hemi);
-    this.sun=new THREE.DirectionalLight(0xfff4d6,0.85);this.sun.castShadow=!lowMemoryDevice;
+    this.hemi=new THREE.HemisphereLight(0xd4ecff,0x5a7a3a,0.72);this.scene.add(this.hemi);
+    this.sun=new THREE.DirectionalLight(0xfff4d6,1.0);this.sun.castShadow=!lowMemoryDevice;
     this.rimLight=new THREE.DirectionalLight(0xa080ff,0.2);this.rimLight.position.set(-50,30,-80);this.scene.add(this.rimLight);
-    this.sun.shadow.normalBias=0.08;this.sun.shadow.mapSize.set(512,512);
+    this.sun.shadow.normalBias=0.08;this.sun.shadow.mapSize.set(lowMemoryDevice?512:1536,lowMemoryDevice?512:1536);
     const sc=this.sun.shadow.camera;sc.left=sc.bottom=-45;sc.right=sc.top=45;sc.near=1;sc.far=200;
     this.scene.add(this.sun,this.sun.target);
     this.starsGroup=new THREE.Group();
@@ -10463,7 +10481,7 @@ window.addEventListener("load",()=>{
       r.recordAction && r.recordAction("attack");
       sfx(isBow ? "bow" : "swing");
 
-      var yaw = (this.cam && this.cam.yaw) || this.player.facing || 0;
+      var yaw = (this.cam && Number.isFinite(this.cam.yaw)) ? this.cam.yaw + Math.PI : (Number.isFinite(this.player.facing) ? this.player.facing : Math.PI);
 
       // Slash VFX
       if(!isBow){
@@ -10471,7 +10489,7 @@ window.addEventListener("load",()=>{
         if(fx) this._combatFx.push(fx);
       }
 
-      var range = wType === "spear" ? 4.6 : (wType === "dagger" ? 2.8 : 3.5);
+      var range = wType === "spear" ? 5.0 : (wType === "dagger" ? 3.0 : 4.2);
       var hitAny = false;
 
       if(isBow){
@@ -10521,7 +10539,7 @@ window.addEventListener("load",()=>{
           var dang = ang - yaw;
           while(dang > Math.PI) dang -= Math.PI * 2;
           while(dang < -Math.PI) dang += Math.PI * 2;
-          if(Math.abs(dang) > 0.95) continue; // ~110° cone
+          if(Math.abs(dang) > 1.25 && dist > 1.55) continue; // cône plus tolérant + contact rapproché
           var res = calcPlayerDamage(this, e);
           applyEnemyDamage(this, e, res.dmg, res.crit, e.mesh.position);
           hitAny = true;
@@ -10536,7 +10554,7 @@ window.addEventListener("load",()=>{
             var adist=Math.hypot(adx,adz), aang=Math.atan2(adx,adz), adiff=aang-yaw;
             while(adiff>Math.PI)adiff-=Math.PI*2;
             while(adiff<-Math.PI)adiff+=Math.PI*2;
-            if(adist<range*0.9 && Math.abs(adiff)<=0.95){
+            if(adist<range*0.95 && (Math.abs(adiff)<=1.25 || adist<1.55)){
               a.hp -= Math.max(2, r.st.atk*0.48+r.level*0.65+((w&&w.dmg)||0));
               a.flashT=0.15;hitAny=true;
             }
@@ -10571,6 +10589,7 @@ window.addEventListener("load",()=>{
             // KeyE only for attack — F is interact. Check just E.
           }
           if(input.has && input.has("KeyE")) pressed = true;
+          if(input.mouseAttack) pressed = true;
           // Le clic gauche ne déclenche jamais une attaque. Seule la touche E (ou le bouton tactile dédié) attaque.
           if(input.attack) pressed = true;
           // edge detect
@@ -10658,8 +10677,8 @@ window.addEventListener("load",()=>{
     // Monkey-patch : si l'ancien code set attackT, on laisse — double attack risk
     // Neutraliser en mettant atkCd haut quand on attaque deja
 
-    console.info("[RAFORI] Systeme de combat + animations actifs (E ou clic)");
-    if(game.rpg && game.rpg.toast) game.rpg.toast("Combat: E ou clic — combos x3");
+    console.info("[RAFORI] Combat corrigé : E, bouton tactile ou clic gauche ; visée alignée sur la caméra.");
+    if(game.rpg && game.rpg.toast) game.rpg.toast("Combat : E ou clic gauche — combos x3");
   }
 
   function boot(){
@@ -16044,8 +16063,8 @@ st.textContent='.raf-bestiary-grid{display:grid;grid-template-columns:repeat(aut
 document.head.appendChild(st);
 function bestiaryCatalog(){
   const out=[];
-  try{for(const [id,d] of Object.entries(ENEMY_TYPES||{})){if(d)out.push({key:"enemy:"+id,name:d.n||id,kind:d.boss||d.legendary?"Boss":"Monstre",hp:d.hp||0,level:d.minLv||1,icon:d.special==="dragon"?"🐉":d.slime?"🟣":d.special==="spider"?"🕷️":d.special==="bat"?"🦇":"👹"});}}catch(_){}
-  try{for(const [id,d] of Object.entries(GUARDIANS||{})){if(d)out.push({key:"guardian:"+id,name:d.n||id,kind:"Gardien",hp:d.hp||0,level:d.lvl||1,icon:"🛡️"});}}catch(_){}
+  try{for(const [id,d] of Object.entries(ENEMY_TYPES||{})){if(d)out.push({key:"enemy:"+id,name:d.n||id,kind:d.boss||d.legendary?"Boss":"Monstre",hp:d.hp||0,level:d.minLv||1,icon:({gobelin:"🧌",kobold:"🦎",orc:"👹",spider:"🕷️",bat:"🦇",slime_green:"🟢",slime_red:"🔴",slime_blue:"🔵",slime_purple:"🟣",slime_gold:"🟡",dragon_baby:"🐲",dragon_guardian:"🐉",dragon_ancestral:"🐉",golem_fer:"🗿"}[id]||"👾")});}}catch(_){}
+  try{for(const [id,d] of Object.entries(GUARDIANS||{})){if(d)out.push({key:"guardian:"+id,name:d.n||id,kind:"Gardien",hp:d.hp||0,level:d.lvl||1,icon:({humain:"⚔️",elfe:"🌳",nain:"🗿",semi:"🐺"}[id]||"🛡️")});}}catch(_){}
   const animals={cerf:["Cerf","🦌",12],sanglier:["Sanglier","🐗",20],renard:["Renard","🦊",8],lapin:["Lapin","🐇",4],loup:["Loup","🐺",18],ours:["Ours","🐻",35]};
   for(const [id,v] of Object.entries(animals))out.push({key:"animal:"+id,name:v[0],kind:"Animal",hp:v[2],level:1,icon:v[1]});
   return out;
@@ -16086,7 +16105,7 @@ function renderBestiary(){
   for(const e of list){
     const known=defeated.has(e.key);if(known)count++;
     const card=document.createElement("div");card.className="raf-bestiary-card"+(known?"":" locked");
-    const art=document.createElement("div");art.className="raf-bestiary-art";art.textContent=known?e.icon:"❔";card.appendChild(art);
+    const art=document.createElement("div");art.className="raf-bestiary-art";art.textContent=e.icon;card.appendChild(art);
     const title=document.createElement("b");title.textContent=known?e.name:"???";card.appendChild(title);
     const detail=document.createElement("small");detail.textContent=known?(e.kind+" · PV max "+e.hp+" · Niv. "+e.level):"Créature non identifiée";card.appendChild(detail);
     grid.appendChild(card);
@@ -16101,7 +16120,7 @@ document.addEventListener("click",e=>{
 },true);
 window.RAFORI_BESTIARY={render:renderBestiary,defeated:()=>[...readDefeated()]};
 try{if(typeof Player!=="undefined"&&Player.prototype.update&&!Player.prototype.update._rafNoSwim){const old=Player.prototype.update;const wrapped=function(dt){this.swimming=false;this.isSwimming=false;const r=old.apply(this,arguments);this.swimming=false;this.isSwimming=false;const p=this.position;if(p&&typeof heightAt==="function"&&typeof CONFIG!=="undefined"&&heightAt(p.x,p.z)<CONFIG.waterLevel+0.35){p.x-=this.vel.x*(dt||0.016)*1.5;p.z-=this.vel.z*(dt||0.016)*1.5;p.y=heightAt(p.x,p.z)+0.12;this.vel.x=0;this.vel.z=0;}return r;};wrapped._rafNoSwim=true;Player.prototype.update=wrapped;}}catch(e){console.warn("[RAFORI] swim disabled",e);}
-console.info("[RAFORI V32.5] monture corrigée, bestiaire complet et sauvegarde des victoires actifs");
+console.info("[RAFORI V32.6] monture corrigée, bestiaire complet et sauvegarde des victoires actifs");
 })();
 </script>
 </body>
