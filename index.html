@@ -10485,7 +10485,7 @@ window.addEventListener("load",()=>{
 
       // Slash VFX
       if(!isBow){
-        var fx = spawnSlash(this.scene, p, yaw, this.player.combo === 2 ? 0xa0e0ff : 0xffe0a0);
+        var fx = spawnSlash(this.scene, p, yaw + Math.PI, this.player.combo === 2 ? 0xa0e0ff : 0xffe0a0);
         if(fx) this._combatFx.push(fx);
       }
 
