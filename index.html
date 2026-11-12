@@ -12680,12 +12680,16 @@ if(typeof RPG!=="undefined"&&RPG.prototype){
  RPG.prototype.updateQuest=function(type,amount=1){
   for(const q of this.quests||[]){
    if(q.done||q.type!==type)continue;
-   if(q.id==="side_bandits"&&(!this._rafBanditKillSignal||this._rafBanditKillCounted))continue;
-   if(q.id==="side_wildlife"&&(!this._rafAnimalKillSignal||this._rafAnimalKillCounted))continue;
-   if(q.id==="side_bandits")this._rafBanditKillCounted=true;
-   if(q.id==="side_wildlife")this._rafAnimalKillCounted=true;
+   if(q.id==="side_bandits"){if(!this._rafBanditKillSignal||this._rafBanditKillCounted)continue;this._rafBanditKillCounted=true;}
+   if(q.id==="side_wildlife"){if(!this._rafAnimalKillSignal||this._rafAnimalKillCounted)continue;this._rafAnimalKillCounted=true;}
+   q.progress=Math.min(q.target,(q.progress||0)+amount);
+   if(q.progress>=q.target){
+    q.done=true;this.gold+=q.reward.gold||0;this.grantXp(q.reward.xp||0);
+    this.notify("✅ Quête terminée : "+q.title+" (+"+(q.reward.xp||0)+" XP, +"+(q.reward.gold||0)+" or)","rare");
+    this.toast("✅ "+q.title+" !");
+    if(q.dynamic){setTimeout(()=>{this.quests.push(this.generateQuest());this.notify("📜 Nouvelle quête disponible !","info");},1200);}
+   }
   }
-  return prev.call(this,type,amount);
  };
 }
 if(typeof Game!=="undefined"&&Game.prototype){
