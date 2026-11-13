@@ -16402,8 +16402,10 @@ function install(){
  };
  const oldKilled=Game.prototype.onEnemyKilled;
  if(oldKilled)Game.prototype.onEnemyKilled=function(e){
+   if(e&&e._rafQuestCounted)return;
+   if(e)e._rafQuestCounted=true;
    const isB=bandit(e);
-   let result;try{result=oldKilled.call(this,e);}finally{}
+   const result=oldKilled.call(this,e);
    if(isB)this.rpg.updateQuest("bandit_kill",1);
    return result;
  };
