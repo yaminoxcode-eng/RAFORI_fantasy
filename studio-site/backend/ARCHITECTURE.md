@@ -9,7 +9,7 @@
 
 ## First migration included
 
-`supabase/migrations/0001_raf_order_core.sql` creates:
+`supabase/migrations/0001_rafori_core.sql` creates:
 - player profiles;
 - characters and cloud save records;
 - teams and memberships;
