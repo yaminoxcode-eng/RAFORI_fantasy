@@ -16393,16 +16393,12 @@ function install(){
  // Compteurs : les contrats de bandits ne progressent que sur un bandit.
  const origUpdate=RPG.prototype.updateQuest;
  RPG.prototype.updateQuest=function(type,amount=1){
+   if(type==="bandit_kill"){if(origUpdate)origUpdate.call(this,"kill",amount);return;}
    const held=(this.quests||[]).filter(q=>!q.done&&q.type==="kill"&&(/bandit|brigand/i.test((q.title||"")+" "+(q.desc||""))));
    const saved=held.map(q=>[q,q.progress,q.done]);
    if(type==="kill")saved.forEach(([q])=>{q.done=true;});
-   if(type==="bandit_kill"){
-     try{if(origUpdate)origUpdate.call(this,"kill",amount);}
-     finally{saved.forEach(([q,progress,done])=>{q.progress=progress;q.done=done;});}
-   }else{
-     try{if(origUpdate)origUpdate.call(this,type,amount);}
-     finally{if(type==="kill")saved.forEach(([q,progress,done])=>{q.progress=progress;q.done=done;});}
-   }
+   try{if(origUpdate)origUpdate.call(this,type,amount);}
+   finally{if(type==="kill")saved.forEach(([q,progress,done])=>{q.progress=progress;q.done=done;});}
  };
  const oldKilled=Game.prototype.onEnemyKilled;
  if(oldKilled)Game.prototype.onEnemyKilled=function(e){
