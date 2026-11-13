@@ -16242,6 +16242,185 @@ console.info("[RAFORI V32.7] carte intégrale, spawns animaux renforcés, cheval
 })();
 </script>
 
+
+<script>
+/* RAFORI V32.8 — attaques réactives et suivi de quêtes */
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+let installed=false, tracker=null, lastRefresh=0;
+function bandit(e){
+  const d=e&&(e.type||e.def||{});
+  const n=String((e&&e.name)||"")+" "+String(d.n||"")+" "+String(d.model||"")+" "+String(d.id||"");
+  return /bandit|brigand/i.test(n)||d.model==="bandit";
+}
+function targetFor(g,q){
+  if(!g||!q)return null;
+  const p=g.player&&g.player.position;if(!p)return null;
+  const near=(arr,posFn,filter)=>{let best=null,bd=Infinity;for(const o of arr||[]){if(!o||filter&&!filter(o))continue;const v=posFn(o);if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.z))continue;const d=Math.hypot(v.x-p.x,v.z-p.z);if(d<bd){bd=d;best={x:v.x,z:v.z,name:o.name||o.type?.n||o.type?.name||"Objectif",distance:d};}}return best;};
+  const type=q.type||"", id=q.id||"", desc=(q.title||"")+" "+(q.desc||"");
+  if(type==="ancestral"||id==="q_world_tree"||/dragon ancestral/i.test(desc))return LYNDRASILE?{x:LYNDRASILE.x,z:LYNDRASILE.z,name:"L'Arbre-Monde"}:null;
+  if(type==="guardian_humain"||id==="q_prologue_guardian"){
+    const c=CAPITALS&&CAPITALS.humain;return c?{x:c.x,z:c.z,name:"Gardien du Sceau Humain"}:null;
+  }
+  if(type==="seals"||id==="q_four_peoples"){
+    const seals=g.rpg.seals||[],caps=Object.entries(CAPITALS||{}).filter(([race])=>!seals.includes(race));
+    caps.sort((a,b)=>Math.hypot(a[1].x-p.x,a[1].z-p.z)-Math.hypot(b[1].x-p.x,b[1].z-p.z));
+    if(caps[0])return{x:caps[0][1].x,z:caps[0][1].z,name:"Capitale "+(PEOPLES[caps[0][0]]?.n||caps[0][0])};
+  }
+  if(type==="guardian"){
+    const caps=Object.values(CAPITALS||{}).filter(c=>!c.guardianDefeated);
+    caps.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
+    if(caps[0])return{x:caps[0].x,z:caps[0].z,name:"Gardien de "+caps[0].name};
+  }
+  if(type==="kill"){
+    const wantsBandit=/bandit|brigand/i.test(desc)||id==="side_bandits";
+    return near(g.enemies,e=>e.mesh&&e.mesh.position,e=>e.hp>0&&(!wantsBandit||bandit(e)));
+  }
+  if(type==="hunt")return near(g.wildlife,a=>a.group&&a.group.position,a=>a.hp>0);
+  if(type==="dungeon"){
+    const d=near(g.dungeons,o=>o.group?.position||o.position||o,o=>!o.done);
+    if(d)return {...d,name:"Donjon le plus proche"};
+  }
+  if(type==="talk_villager"||type==="guild_join"){
+    const n=near(g.npcs,o=>(o.mesh||o.group)?.position,o=>true);
+    if(n)return {...n,name:"Villageois / Guilde"};
+  }
+  if(type==="analysis")return null;
+  if(type==="gather"){
+    const item=q.item||(/bois/i.test(desc)?"wood":/herbe/i.test(desc)?"herb":/minerai/i.test(desc)?"tower_ore":null);
+    const drop=near(g.drops,d=>d.mesh?.position,d=>!item||d.item===item);
+    if(drop)return {...drop,name:"Ressource à ramasser"};
+    const nodes=near(g.resourceNodes||g.nodes||[],n=>n.mesh?.position||n.position,n=>!item||n.item===item||n.id===item);
+    if(nodes)return {...nodes,name:"Ressource à récolter"};
+  }
+  return null;
+}
+function ensureUI(){
+ if(tracker)return;
+ tracker=document.createElement("section");tracker.id="rafQuestTracker";
+ tracker.innerHTML='<div class="rq-head"><span>📜 JOURNAL DE ROUTE</span><button type="button" id="rqHide" aria-label="Masquer">−</button></div><div id="rqMain"></div><div id="rqSide"></div><div class="rq-foot">U · Journal des quêtes</div>';
+ document.body.appendChild(tracker);
+ const st=document.createElement("style");st.textContent=`
+ #rafQuestTracker{position:fixed;z-index:75;top:92px;left:16px;width:min(320px,calc(100vw - 32px));max-height:42vh;overflow:auto;color:#f5f0df;background:linear-gradient(145deg,rgba(10,20,31,.92),rgba(23,31,42,.88));border:1px solid rgba(224,184,96,.62);border-radius:11px;box-shadow:0 8px 26px #0007;font:12px/1.45 system-ui;backdrop-filter:blur(7px);pointer-events:auto}
+ #rafQuestTracker .rq-head{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;color:#f1ce82;font-weight:900;letter-spacing:1px;font-size:10px;border-bottom:1px solid #d5b66b55}
+ #rafQuestTracker button{background:#263548;color:#f8e7bd;border:1px solid #b68e4d;border-radius:5px;padding:1px 8px;cursor:pointer}
+ #rafQuestTracker .rq-card{padding:8px 10px;border-bottom:1px solid #ffffff18}
+ #rafQuestTracker .rq-card:last-child{border-bottom:0}
+ #rafQuestTracker .rq-title{font-weight:850;color:#ffe4a7;font-size:12px;margin-bottom:3px}
+ #rafQuestTracker .rq-desc{color:#e4e8e9;font-size:11px}
+ #rafQuestTracker .rq-progress{height:5px;background:#ffffff20;border-radius:8px;overflow:hidden;margin:6px 0 4px}
+ #rafQuestTracker .rq-progress i{display:block;height:100%;background:linear-gradient(90deg,#4fb9a3,#e6bd67)}
+ #rafQuestTracker .rq-target{color:#bfe8dc;font-size:11px;display:flex;align-items:center;gap:6px;margin-top:4px}
+ #rafQuestTracker .rq-arrow{display:inline-block;color:#ffcf6c;font-size:18px;line-height:14px;min-width:18px;text-align:center}
+ #rafQuestTracker .rq-foot{padding:5px 10px;color:#aeb9c0;font-size:9px;background:#0002}
+ #rafQuestTracker.collapsed #rqMain,#rafQuestTracker.collapsed #rqSide,#rafQuestTracker.collapsed .rq-foot{display:none}
+ @media(max-width:700px){#rafQuestTracker{top:72px;left:8px;width:min(270px,calc(100vw - 16px));max-height:32vh}}
+ `;document.head.appendChild(st);
+ $("rqHide").onclick=()=>tracker.classList.toggle("collapsed");
+}
+function activeMain(r){
+ const order=["q_first_blood","q_gather_wood","q_craft_sword","q_prologue_analysis","q_prologue_guardian","q_four_peoples","q_world_tree"];
+ for(const id of order){const q=(r.quests||[]).find(x=>x.id===id);if(q&&!q.done)return q;}
+ return (r.quests||[]).find(q=>q.campaign&&!q.done)||null;
+}
+function renderCard(g,q,label){
+ if(!q)return '<div class="rq-card"><div class="rq-title">'+label+'</div><div class="rq-desc">Aucun objectif en cours.</div></div>';
+ const r=g.rpg,p=g.player.position,done=Math.min(q.target||1,q.progress||0),pct=Math.max(0,Math.min(100,done/(q.target||1)*100));
+ let dest=targetFor(g,q),hint="";
+ if(dest){
+   const dx=dest.x-p.x,dz=dest.z-p.z,dist=Math.round(Math.hypot(dx,dz));
+   const yaw=(g.cam&&Number.isFinite(g.cam.yaw)?g.cam.yaw+Math.PI:(g.player.facing||0));
+   const angle=Math.atan2(dx,dz)-yaw;
+   const deg=Math.round(angle*180/Math.PI);
+   hint='<div class="rq-target"><span class="rq-arrow" style="transform:rotate('+deg+'deg)">▲</span><span> '+dest.name+' · '+dist+' m</span></div>';
+ }else if(q.type==="analysis")hint='<div class="rq-target">🔍 Approche-toi d’un être ou d’un élément, puis appuie sur A.</div>';
+ else if(q.type==="gather")hint='<div class="rq-target">🌿 Explore les environs et repère les ressources au sol.</div>';
+ else if(q.type==="craft")hint='<div class="rq-target">⚒️ Rejoins un atelier ou un forgeron pour fabriquer l’objet.</div>';
+ else if(q.type==="talk_villager"||q.type==="guild_join")hint='<div class="rq-target">💬 Cherche un villageois ou le comptoir de la Guilde.</div>';
+ else if(q.type==="ancestral"&&r.seals.length<4)hint='<div class="rq-target">🔒 Il te faut d’abord réunir les quatre Sceaux.</div>';
+ const isBandit=/bandit|brigand/i.test((q.title||"")+" "+(q.desc||""));
+ if(dest&&g.waypoint){g.waypoint={x:dest.x,z:dest.z};}
+ return '<div class="rq-card"><div class="rq-title">'+label+' · '+q.title+'</div><div class="rq-desc">'+(q.desc||"Objectif de quête")+'</div><div class="rq-progress"><i style="width:'+pct+'%"></i></div><div class="rq-desc">'+done+'/'+q.target+' · '+Math.round(pct)+'%</div>'+hint+'</div>';
+}
+function refresh(g){
+ if(!g||!g.rpg||!g.player)return;
+ ensureUI();
+ const r=g.rpg,main=activeMain(r);
+ const side=(r.quests||[]).filter(q=>!q.done&&(q.side||q.dynamic)).slice(-1)[0]||null;
+ $("rqMain").innerHTML=renderCard(g,main,"QUÊTE PRINCIPALE");
+ $("rqSide").innerHTML=side?renderCard(g,side,"CONTRAT ACTIF"):"";
+ const q=side||main,dest=targetFor(g,q);
+ if(dest)g.waypoint={x:dest.x,z:dest.z};
+ else if(q&&q.type==="analysis")g.waypoint=null;
+}
+function install(){
+ const g=window.__game;if(!g||!g.rpg||!g.player||installed)return false;
+ installed=true;ensureUI();
+ // Une pression rapide est mise en mémoire jusqu'à ce que le délai de l'arme soit écoulé.
+ function queueAttack(){g._rafAttackQueuedUntil=performance.now()+520;}
+ document.addEventListener("keydown",e=>{if(e.code==="KeyE"&&!e.repeat)queueAttack();},true);
+ document.addEventListener("mousedown",e=>{if(e.button===0&&e.target===g.renderer?.domElement)queueAttack();},true);
+ // Remplace les verrous de 0,24–0,40 s qui annulaient les frappes rapprochées.
+ const oldAttack=g.rafDoAttack&&g.rafDoAttack.bind(g);
+ if(oldAttack){
+  g.rafDoAttack=function(){
+   if(!this.started||this.menuOpen||this.interior||!this.player)return false;
+   if((this.atkCd||0)>0.035)return false;
+   const w=this.rpg?.equip?.weapon?ITEMS[this.rpg.equip.weapon]:null,type=w?.wtype||"sword";
+   this.atkCd=0;this._rafAtkLock=false;
+   let result=false;try{result=oldAttack();}catch(e){console.warn("[RAFORI attack]",e);}
+   const cd=type==="bow"?0.28:type==="dagger"?0.10:type==="spear"?0.15:0.12;
+   this.atkCd=cd;this._rafAtkLock=false;
+   if(this.player)this.player.attackT=Math.min(this.player.attackT||0,0.2);
+   this._rafAttackQueuedUntil=0;
+   return result!==false;
+  };
+ }
+ // Buffer pour les tapotements rapides + répétition si la touche/clic est maintenu.
+ const oldStep=g.step.bind(g);
+ g.step=function(dt){
+   const out=oldStep(dt);
+   const input=this.input,held=!!(input&&(input.has?.("KeyE")||input.mouseAttack||input.attack));
+   const queued=performance.now()<(this._rafAttackQueuedUntil||0);
+   if(this.started&&!this.menuOpen&&!this.interior&&(held||queued)&&(this.atkCd||0)<=0.035){
+     this.rafDoAttack();
+   }
+   if(performance.now()>(this._rafAttackQueuedUntil||0))this._rafAttackQueuedUntil=0;
+   const now=performance.now();if(now-lastRefresh>350){lastRefresh=now;refresh(this);}
+   return out;
+ };
+ // Compteurs : les contrats de bandits ne progressent que sur un bandit.
+ const origUpdate=RPG.prototype.updateQuest;
+ RPG.prototype.updateQuest=function(type,amount=1){
+   const held=(this.quests||[]).filter(q=>!q.done&&q.type==="kill"&&(/bandit|brigand/i.test((q.title||"")+" "+(q.desc||""))));
+   const saved=held.map(q=>[q,q.progress]);
+   if(type==="kill"&&!this._rafKilledBandit)saved.forEach(([q,v])=>q.progress=v);
+   if(type==="bandit_kill"){
+     if(origUpdate)origUpdate.call(this,"kill",amount);
+   }else if(origUpdate)origUpdate.call(this,type,amount);
+   if(type==="kill"&&!this._rafKilledBandit)saved.forEach(([q,v])=>{if(!q.done)q.progress=v;});
+ };
+ const oldKilled=Game.prototype.onEnemyKilled;
+ if(oldKilled)Game.prototype.onEnemyKilled=function(e){
+   const isB=bandit(e);this.rpg._rafKilledBandit=isB;
+   let result;try{result=oldKilled.call(this,e);}finally{this.rpg._rafKilledBandit=false;}
+   if(isB)this.rpg.updateQuest("bandit_kill",1);
+   return result;
+ };
+ // Le marqueur suit l'étape active de la campagne et le dernier contrat accepté.
+ const oldOffer=RPG.prototype.rafOfferSideQuest;
+ if(oldOffer)RPG.prototype.rafOfferSideQuest=function(){const q=oldOffer.apply(this,arguments);if(q){setTimeout(()=>refresh(window.__game),0);}return q;};
+ const oldRender=RPG.prototype.renderMenu;
+ RPG.prototype.renderMenu=function(){const v=oldRender.apply(this,arguments);if(this.menuTab==="quests")setTimeout(()=>refresh(this.g),0);return v;};
+ setTimeout(()=>refresh(g),300);
+ console.info("[RAFORI V32.8] combat rapide + suivi de quêtes activé");
+ return true;
+}
+window.addEventListener("load",()=>{if(install())return;const iv=setInterval(()=>{if(install())clearInterval(iv);},400);setTimeout(()=>clearInterval(iv),20000);});
+})();
+</script>
+
 </body>
 </html><script>
 /* ============================================================
