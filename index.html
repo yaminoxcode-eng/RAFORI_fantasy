@@ -16394,17 +16394,20 @@ function install(){
  const origUpdate=RPG.prototype.updateQuest;
  RPG.prototype.updateQuest=function(type,amount=1){
    const held=(this.quests||[]).filter(q=>!q.done&&q.type==="kill"&&(/bandit|brigand/i.test((q.title||"")+" "+(q.desc||""))));
-   const saved=held.map(q=>[q,q.progress]);
-   if(type==="kill"&&!this._rafKilledBandit)saved.forEach(([q,v])=>q.progress=v);
+   const saved=held.map(q=>[q,q.progress,q.done]);
+   if(type==="kill")saved.forEach(([q])=>{q.done=true;});
    if(type==="bandit_kill"){
-     if(origUpdate)origUpdate.call(this,"kill",amount);
-   }else if(origUpdate)origUpdate.call(this,type,amount);
-   if(type==="kill"&&!this._rafKilledBandit)saved.forEach(([q,v])=>{if(!q.done)q.progress=v;});
+     try{if(origUpdate)origUpdate.call(this,"kill",amount);}
+     finally{saved.forEach(([q,progress,done])=>{q.progress=progress;q.done=done;});}
+   }else{
+     try{if(origUpdate)origUpdate.call(this,type,amount);}
+     finally{if(type==="kill")saved.forEach(([q,progress,done])=>{q.progress=progress;q.done=done;});}
+   }
  };
  const oldKilled=Game.prototype.onEnemyKilled;
  if(oldKilled)Game.prototype.onEnemyKilled=function(e){
-   const isB=bandit(e);this.rpg._rafKilledBandit=isB;
-   let result;try{result=oldKilled.call(this,e);}finally{this.rpg._rafKilledBandit=false;}
+   const isB=bandit(e);
+   let result;try{result=oldKilled.call(this,e);}finally{}
    if(isB)this.rpg.updateQuest("bandit_kill",1);
    return result;
  };
