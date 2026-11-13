@@ -10,6 +10,20 @@ create table if not exists public.player_profiles (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.spawn_zones (
+  zone_key text primary key,
+  display_name text not null,
+  capacity integer not null default 24 check (capacity > 0),
+  enabled boolean not null default true
+);
+
+insert into public.spawn_zones(zone_key, display_name, capacity) values
+ ('lisiere-aube','Lisière de l''Aube',24),
+ ('val-brume','Val de Brume',24),
+ ('plaine-ambre','Plaine d''Ambre',24),
+ ('bois-ancien','Bois Ancien',24)
+on conflict (zone_key) do nothing;
+
 create table if not exists public.characters (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
@@ -20,12 +34,13 @@ create table if not exists public.characters (
   experience bigint not null default 0 check (experience >= 0),
   inventory jsonb not null default '[]'::jsonb,
   equipped jsonb not null default '{}'::jsonb,
-  spawn_zone text not null,
+  spawn_zone text not null references public.spawn_zones(zone_key),
   spawn_position jsonb not null default '{"x":0,"y":0,"z":0}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index if not exists characters_owner_idx on public.characters(owner_id);
+create index if not exists characters_spawn_zone_idx on public.characters(spawn_zone);
 
 create table if not exists public.character_saves (
   character_id uuid primary key references public.characters(id) on delete cascade,
@@ -56,23 +71,23 @@ create table if not exists public.team_members (
 );
 create index if not exists team_members_user_idx on public.team_members(user_id);
 
-create table if not exists public.spawn_zones (
-  zone_key text primary key,
-  display_name text not null,
-  capacity integer not null default 24 check (capacity > 0),
-  enabled boolean not null default true
-);
+-- SECURITY DEFINER avoids recursive RLS when a member checks their own team.
+create or replace function public.is_raf_team_member(p_team_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.team_members
+    where team_id = p_team_id and user_id = auth.uid()
+  );
+$$;
 
-insert into public.spawn_zones(zone_key, display_name, capacity) values
- ('lisiere-aube','Lisière de l''Aube',24),
- ('val-brume','Val de Brume',24),
- ('plaine-ambre','Plaine d''Ambre',24),
- ('bois-ancien','Bois Ancien',24)
-on conflict (zone_key) do nothing;
-
--- New characters are assigned a start zone in a round-robin-like random choice
--- and always receive the same starter sword in their inventory.
-create or replace function public.create_raf_order_character(
+-- Creates a character only for the signed-in user, chooses a zone with free
+-- capacity under a row lock, and grants every new character the starter sword.
+create or replace function public.create_rafori_character(
   p_display_name text,
   p_people text,
   p_gender text
@@ -85,6 +100,9 @@ declare
   v_user uuid := auth.uid();
   v_character uuid;
   v_zone text;
+  v_candidate text;
+  v_count integer;
+  v_capacity integer;
 begin
   if v_user is null then
     raise exception 'authentication_required' using errcode = '28000';
@@ -92,13 +110,33 @@ begin
   if not exists (select 1 from public.player_profiles where user_id = v_user) then
     raise exception 'player_profile_required' using errcode = '23503';
   end if;
-  select zone_key into v_zone
-  from public.spawn_zones
-  where enabled = true
-  order by random()
-  limit 1;
+  if p_people not in ('humain','elfe','nain','semi-loup') then
+    raise exception 'invalid_people';
+  end if;
+  if p_gender not in ('masculin','feminin','autre') then
+    raise exception 'invalid_gender';
+  end if;
+
+  for v_candidate in
+    select zone_key from public.spawn_zones
+    where enabled = true
+    order by (select count(*) from public.characters c where c.spawn_zone = spawn_zones.zone_key), random()
+  loop
+    select zone_key, capacity into v_zone, v_capacity
+    from public.spawn_zones
+    where zone_key = v_candidate and enabled = true
+    for update skip locked;
+    if v_zone is not null then
+      select count(*) into v_count from public.characters where spawn_zone = v_zone;
+      if v_count < v_capacity then
+        exit;
+      end if;
+      v_zone := null;
+    end if;
+  end loop;
+
   if v_zone is null then
-    raise exception 'no_spawn_zone_available';
+    raise exception 'all_spawn_zones_full';
   end if;
 
   insert into public.characters(
@@ -139,17 +177,14 @@ create policy "saves readable by owner" on public.character_saves
 for select to authenticated using (owner_id = auth.uid());
 
 create policy "teams readable by members" on public.teams
-for select to authenticated using (
-  exists (select 1 from public.team_members tm where tm.team_id = id and tm.user_id = auth.uid())
-);
+for select to authenticated using (public.is_raf_team_member(id));
 create policy "team members readable by teammates" on public.team_members
-for select to authenticated using (
-  exists (select 1 from public.team_members mine where mine.team_id = team_id and mine.user_id = auth.uid())
-);
+for select to authenticated using (public.is_raf_team_member(team_id));
 
 grant select, insert, update on public.player_profiles to authenticated;
 grant select on public.characters, public.character_saves, public.teams, public.team_members to authenticated;
-grant execute on function public.create_raf_order_character(text,text,text) to authenticated;
+grant execute on function public.create_rafori_character(text,text,text) to authenticated;
+grant execute on function public.is_raf_team_member(uuid) to authenticated;
 
 -- Intentionally no client write policy for characters, saves, teams or loot.
 -- Privileged server endpoints must validate membership and game state before writes.
