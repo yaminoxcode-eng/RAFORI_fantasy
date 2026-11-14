@@ -2466,7 +2466,7 @@ class Input{
     addEventListener("keydown",e=>{if(isE(e.target))return;this.keys.add(e.code);if(e.code==="Space")e.preventDefault();AudioEngine.resume();});
     addEventListener("keyup",e=>this.keys.delete(e.code));
     addEventListener("blur",()=>this.keys.clear());
-    addEventListener("mousedown",e=>{if(e.target===dom){this.dragging=true;if(e.button===0)this.mouseAttack=true;}});
+    addEventListener("mousedown",e=>{if(e.target===dom){this.dragging=true;this.mouseAttack=false;}});
     addEventListener("mouseup",()=>{this.dragging=false;this.mouseAttack=false;});
     addEventListener("mousemove",e=>{if(document.pointerLockElement===dom||this.dragging){this.dx+=e.movementX;this.dy+=e.movementY;}});
     addEventListener("wheel",e=>this.wheel+=Math.sign(e.deltaY),{passive:true});
@@ -16360,7 +16360,6 @@ function install(){
  // Une pression rapide est mise en mémoire jusqu'à ce que le délai de l'arme soit écoulé.
  function queueAttack(){g._rafAttackQueuedUntil=performance.now()+520;}
  document.addEventListener("keydown",e=>{if(e.code==="KeyE"&&!e.repeat)queueAttack();},true);
- document.addEventListener("mousedown",e=>{if(e.button===0&&e.target===g.renderer?.domElement)queueAttack();},true);
  // Remplace les verrous de 0,24–0,40 s qui annulaient les frappes rapprochées.
  const oldAttack=g.rafDoAttack&&g.rafDoAttack.bind(g);
  if(oldAttack){
