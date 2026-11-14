@@ -1,6 +1,6 @@
 /* RAFORI Fantasy — cache léger de la page de jeu */
-const RAFORI_CACHE = "rafori-fantasy-v21-shell-v1";
-const APP_PATH = new URL("./RAFORI_Fantasy_V21_Quests_Survival_Guide.html", self.location.href).pathname;
+const RAFORI_CACHE = "rafori-fantasy-v32-shell-v2";
+const APP_PATH = new URL("./index.html", self.location.href).pathname;
 
 self.addEventListener("install", event => {
   self.skipWaiting();
