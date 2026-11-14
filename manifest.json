@@ -3,7 +3,7 @@
   "short_name": "RAFORI",
   "description": "RPG fantasy en monde ouvert",
   "lang": "fr",
-  "start_url": "./RAFORI_Fantasy_V21_Quests_Survival_Guide.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
